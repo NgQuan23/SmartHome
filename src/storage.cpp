@@ -35,14 +35,10 @@ void storageFlush(){
   while (f.available()){
     String line = f.readStringUntil('\n');
     if (line.length() == 0) continue;
-    // Try push to Firebase first
-    // parse minimal JSON to get fields; we'll just send whole line to firebase as a JSON object
-    firebasePushTelemetry(-1, -1, false); // noop to keep symbol if needed
-    // Also publish to MQTT
+    firebasePushTelemetry(-1, -1, false);
     mqttPublish(TELEMETRY_TOPIC, line.c_str());
     delay(50);
   }
   f.close();
-  // remove file after flush
   LittleFS.remove(STORAGE_PATH);
 }

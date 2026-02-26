@@ -3,7 +3,6 @@
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 
-// simple URL-encode helper
 String urlencode(const String &str){
   String encoded = "";
   char c;
@@ -27,7 +26,7 @@ void telegramSend(const String &message){
   WiFiClientSecure client;
   client.setInsecure(); 
   HTTPClient https;
-  String url = String("https://api.telegram.org/bot") + TG_BOT_TOKEN + "/sendMessage";
+  String url = String("https://api.telegram.org/bot") + String(TG_BOT_TOKEN) + "/sendMessage";
   https.begin(client, url);
   https.addHeader("Content-Type", "application/x-www-form-urlencoded");
   String post = "chat_id=" + String(TG_CHAT_ID) + "&text=" + urlencode(message);

@@ -14,7 +14,7 @@ void blynkInit(){
 }
 
 void blynkPublishTelemetry(int gas, float distance, bool motion, int distanceLevel){
-  // Map telemetry to virtual pins
+
   Blynk.virtualWrite(V0, gas);
   if (distance < 0) Blynk.virtualWrite(V1, "--");
   else Blynk.virtualWrite(V1, (int)distance);
@@ -23,7 +23,7 @@ void blynkPublishTelemetry(int gas, float distance, bool motion, int distanceLev
 }
 
 void blynkNotify(const char* msg){
-  // Some Blynk library variants don't expose notify(); send message to a virtual pin (V3)
+
   Blynk.virtualWrite(V3, msg);
 }
 

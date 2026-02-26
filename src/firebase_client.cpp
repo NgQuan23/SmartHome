@@ -15,7 +15,7 @@ FirebaseData fbdo;
 void firebaseInit(){
   configF.api_key = FIREBASE_API_KEY;
   configF.database_url = FIREBASE_HOST;
-  // Optional: set callback for long running token generation
+
   Firebase.begin(&configF, &auth);
   Firebase.reconnectWiFi(true);
   Serial.println("Firebase initialized");
@@ -23,7 +23,7 @@ void firebaseInit(){
 
 void firebasePushTelemetry(int gas, float distance, bool motion){
   if (WiFi.status() != WL_CONNECTED){
-    // store payload for later sync
+
     StaticJsonDocument<192> doc;
     doc["gas"] = gas;
     doc["distance"] = distance;
@@ -42,7 +42,7 @@ void firebasePushTelemetry(int gas, float distance, bool motion){
     Serial.println("Firebase: telemetry pushed");
   } else {
     Serial.printf("Firebase push failed: %s\n", fbdo.errorReason().c_str());
-    // fallback store
+
     StaticJsonDocument<192> doc;
     doc["gas"] = gas;
     doc["distance"] = distance;

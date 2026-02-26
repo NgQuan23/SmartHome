@@ -9,8 +9,6 @@ static WiFiClient espClient;
 static PubSubClient client(espClient);
 
 void mqttCallback(char* topic, byte* payload, unsigned int length) {
-  // simple handler for incoming commands (e.g., relay control)
-  // payload is not null-terminated
   String msg;
   for (unsigned int i = 0; i < length; i++) msg += (char)payload[i];
   Serial.printf("MQTT in: %s -> %s\n", topic, msg.c_str());
@@ -28,7 +26,6 @@ void wifiInit(){
   Serial.println();
   if (WiFi.status() == WL_CONNECTED) {
     Serial.printf("WiFi connected, IP: %s\n", WiFi.localIP().toString().c_str());
-    // Attempt to flush any stored offline events
     storageFlush();
   } else {
     Serial.println("WiFi not connected (continuing offline)");

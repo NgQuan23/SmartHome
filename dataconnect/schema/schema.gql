@@ -1,0 +1,46 @@
+type User @table {
+  displayName: String!
+  email: String!
+  createdAt: Timestamp!
+  profilePictureUrl: String
+  timeZone: String
+}
+
+type Subject @table {
+  user: User!
+  name: String!
+  createdAt: Timestamp!
+  description: String
+  colorHex: String
+}
+
+type StudySession @table {
+  user: User!
+  subject: Subject!
+  startTime: Timestamp!
+  endTime: Timestamp!
+  durationMinutes: Int!
+  createdAt: Timestamp!
+  notes: String
+}
+
+type StudyGoal @table {
+  user: User!
+  subject: Subject
+  goalType: String!
+  targetValue: Float!
+  startDate: Date!
+  createdAt: Timestamp!
+  endDate: Date
+  description: String
+}
+
+type ScheduledSession @table {
+  user: User!
+  subject: Subject!
+  scheduledStartTime: Timestamp!
+  scheduledEndTime: Timestamp!
+  createdAt: Timestamp!
+  notes: String
+  isCompleted: Boolean
+}

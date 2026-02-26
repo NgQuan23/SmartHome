@@ -4,7 +4,6 @@
 #include <WiFi.h>
 
 void otaInit(){
-  // only init OTA if WiFi is connected
   if (WiFi.status() != WL_CONNECTED) return;
   ArduinoOTA.setHostname(OTA_HOSTNAME);
   ArduinoOTA.onStart([]() {
