@@ -38,10 +38,10 @@
 #define FIREBASE_DATABASE_SECRET ""
 
 
-#define BLYNK_AUTH "YOUR_BLYNK_AUTH_TOKEN"
-
-#define BLYNK_TEMPLATE_ID ""
-#define BLYNK_TEMPLATE_NAME ""
+/* IMPORTANT: Fill in your Blynk Template Info here before compiling */
+#define BLYNK_TEMPLATE_ID "TMPLxxxxxx"
+#define BLYNK_TEMPLATE_NAME "Device Name"
+#define BLYNK_AUTH_TOKEN "YourAuthToken"
 
 
 #define TG_BOT_TOKEN "8527377630:AAFaNC761ehG82QhE34nb4voTxO7GM--zSk"
