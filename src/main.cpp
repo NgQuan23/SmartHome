@@ -12,12 +12,13 @@
 #include "storage.h"
 #include "esp_sleep.h"
 
-#define PIN_MQ2       34 
-#define PIN_PIR       27 
-#define PIN_TRIG      5  
-#define PIN_ECHO      18 
-#define PIN_BUZZER    13 
-#define PIN_RELAY     14 
+// ESP32-S3 compatible pins
+#define PIN_MQ2       4  // ADC1 channel on ESP32-S3
+#define PIN_PIR       5  
+#define PIN_TRIG      6  
+#define PIN_ECHO      7 
+#define PIN_BUZZER    15 
+#define PIN_RELAY     16 
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
@@ -40,13 +41,16 @@ const unsigned long ALERT_COOLDOWN_MS = 60000;
 
 void setup() {
   Serial.begin(115200);
+  delay(1000);  // Wait for serial monitor
+  Serial.println("\n\n=== SmartHome Starting ===");
+  Serial.flush();
 
-#ifdef ESP32
-  
-
+#if defined(ESP32) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+  // Only for original ESP32, not ESP32-S3
   analogSetPinAttenuation(PIN_MQ2, ADC_11db);
 #endif
 
+  Serial.println("Setting up pins...");
   pinMode(PIN_MQ2, INPUT);
   pinMode(PIN_PIR, INPUT);
   pinMode(PIN_TRIG, OUTPUT);
@@ -59,6 +63,8 @@ void setup() {
   digitalWrite(PIN_RELAY, LOW);
   digitalWrite(PIN_BUZZER, LOW);
 
+  Serial.println("Initializing LCD...");
+  Wire.begin(8, 9);  // ESP32-S3 default I2C pins: SDA=8, SCL=9
   lcd.init();
   lcd.backlight();
   lcd.setCursor(0, 0);
@@ -67,8 +73,10 @@ void setup() {
   lcd.print("Ready...");
   delay(1200);
   lcd.clear();
+  Serial.println("LCD initialized");
 
 
+  Serial.println("Connecting to WiFi...");
   wifiInit();
   mqttInit();
 

@@ -3,8 +3,8 @@
 #define CONFIG_H
 
 
-#define WIFI_SSID "parkytown_Wi-Fi5"
-#define WIFI_PASS "thisismyserver"
+#define WIFI_SSID "Z-Device"
+#define WIFI_PASS "Trungkien27062004"
 
 
 #define MQTT_SERVER "broker.hivemq.com"
@@ -38,10 +38,9 @@
 #define FIREBASE_DATABASE_SECRET ""
 
 
-/* IMPORTANT: Fill in your Blynk Template Info here before compiling */
-#define BLYNK_TEMPLATE_ID "TMPLxxxxxx"
-#define BLYNK_TEMPLATE_NAME "Device Name"
-#define BLYNK_AUTH_TOKEN "YourAuthToken"
+#define BLYNK_TEMPLATE_ID "TMPL66UiZuFxu"
+#define BLYNK_TEMPLATE_NAME "smart home"
+#define BLYNK_AUTH_TOKEN "sc269hJiU_myc4vr0j_ckW3cGh0_fqox"
 
 
 #define TG_BOT_TOKEN "8527377630:AAFaNC761ehG82QhE34nb4voTxO7GM--zSk"
@@ -64,7 +63,7 @@
 
 
 #define PIN_FAN_RELAY PIN_RELAY
-#define PIN_VALVE_RELAY 15 
+#define PIN_VALVE_RELAY 17 
 
 
 #define ENABLE_DEEP_SLEEP 1

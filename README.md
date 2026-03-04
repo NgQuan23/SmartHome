@@ -1,84 +1,65 @@
-# Smart Home System
+# Smart Home Security & Monitoring System
 
-## Project Overview
+This project is an ESP32-S3 based Smart Home system focusing on security, environmental monitoring, and remote alerting.
 
-This is a Smart Home Security System built on ESP32. It uses various sensors to detect gas leaks, obstacles, and motion, and triggers corresponding actions to alert the user and mitigate risks. It is fully connected and controllable through multiple IoT cloud services.
+## 🌟 Key Features
 
-## Current Features
+### 1. Gas Leak & Fire Detection (MQ-2 Sensor)
+- **Level 1 (Warning):** Detects slight gas presence. Local LCD warning.
+- **Level 2 (Leak):** Triggers exhaust fan relay to clear air, sends mobile notifications.
+- **Level 3 (Fire/Emergency):** Triggers loud buzzer, cuts gas valve (relay), shows critical alert on LCD, and sends immediate push notifications.
 
-The current implementation provides the following features and sensors:
+### 2. Intrusion & Proximity Alert (PIR & HC-SR04)
+- **Human Detection (PIR):** Detects motion; wakes screen and sends alerts.
+- **Proximity Alert (Ultrasonic):** 
+  - *Warning:* Object near (Warning beep & notification).
+  - *Critical:* Object too close (Constant alarm & cuts main power via relay).
 
-*   **Sensors:**
-    *   **Gas Sensor (MQ2):** Detects smoke and gas levels.
-    *   **Ultrasonic Sensor (HC-SR04):** Measures distance to detect nearby objects/obstacles.
-    *   **Motion Sensor (PIR):** Detects human motion.
-*   **Actuators & Outputs:**
-    *   **LCD Display (I2C):** Provides on-device status updates.
-    *   **Buzzer:** Sounds alarms during critical situations.
-    *   **Relays:** Controls external devices such as an Exhaust Fan, Main Power, and a Gas Valve.
-*   **Alert Logic:**
-    *   **Gas Alert:**
-        *   Level 1: Low Leak (Safe status).
-        *   Level 2: Warning Leak. Turns ON the Exaust Fan, sends Telegram and Blynk notifications.
-        *   Level 3: Fire/Critical Leak. Sounds the Buzzer, Locks the Gas Valve, sends emergency notifications.
-    *   **Distance/Obstacle Alert:**
-        *   Level 1: Human detected.
-        *   Level 2: Object near. Sounds the buzzer, sends warning notifications.
-        *   Level 3: Critical proximity. Cuts power (via Main Power Relay), sounds buzzer, and sends emergency notifications.
-    *   **Motion Alert:**
-        *   Triggers buzzer and LCD alert when motion is detected.
-*   **Connectivity & Integrations:**
-    *   **WiFi:** Connects the ESP32 to the local network.
-    *   **MQTT:** Publishes and subscribes to topics for local home automation integration.
-    *   **Firebase Realtime Database:** Logs telemetry data.
-    *   **Telegram Bot:** Sends direct alert messages to a specified Telegram Chat ID.
-    *   **Blynk 2.0 (New Blynk IoT):** A fully customizable mobile dashboard to monitor sensor states and receive push notifications.
-    *   **OTA (Over-The-Air) Updates:** Allows for wireless flashing of firmware.
-    *   **Deep Sleep / Power Saving:** Enters deep sleep after a period of inactivity to conserve power.
+### 3. Multi-Channel Notifications
+- **Local Alerts:** 16x2 I2C LCD Display and active Buzzer.
+- **Telegram Bot:** Real-time chat messages for alerts.
+- **Blynk IoT:** Mobile app dashboard for real-time telemetry (Virtual Pins V0-V4) and popup notifications.
 
-## Configuration & Setup
+### 4. Cloud & Data Integrations
+- **Firebase RTDB:** Logs sensor data directly to a Firebase project.
+- **MQTT:** Publishes JSON telemetry data to an MQTT broker (`smarthome/device1/telemetry`) and subscribes to commands.
+- **Offline Storage:** Queues messages locally if WiFi drops, and resends them when back online.
 
-### Setting up New Blynk IoT (Blynk 2.0)
-
-This project has been updated to use the modern **Blynk IoT platform** (Blynk 2.0).
-To configure your device:
-
-1.  **Create a Template:**
-    *   Go to [Blynk Console](https://blynk.cloud/) and log in.
-    *   Navigate to **Templates** -> **New Template**.
-    *   Name it (e.g., "Smart Home Security"), choose "ESP32" for Hardware and "WiFi" for Connection Type.
-2.  **Define Datastreams:**
-    Inside your template, go to the **Datastreams** tab and create the following Virtual Pins:
-    *   **V0 (Integer):** Gas Sensor Value.
-    *   **V1 (Double/Integer):** Distance (cm).
-    *   **V2 (Integer):** PIR Motion State (0/1).
-    *   **V3 (String):** Notifications / Alert Messages.
-    *   **V4 (Integer):** Distance Alert Level.
-3.  **Add a New Device:**
-    *   Go to **Search** -> **Devices** -> **New Device**.
-    *   Choose **From template** and select the template you just created. Give your device a name.
-4.  **Copy Device Credentials:**
-    *   Once your device is created, you will see a block of code with `#define BLYNK_TEMPLATE_ID`, `#define BLYNK_TEMPLATE_NAME`, and `#define BLYNK_AUTH_TOKEN`.
-    *   Copy these three lines.
-5.  **Update `config.h`:**
-    *   Open `src/config.h` in your project folder.
-    *   Locate the Blynk configuration section (around line 41).
-    *   Replace the placeholder values with the credentials you copied:
-        ```cpp
-        /* IMPORTANT: Fill in your Blynk Template Info here before compiling */
-        #define BLYNK_TEMPLATE_ID "TMPLxxxxxx"
-        #define BLYNK_TEMPLATE_NAME "Device Name"
-        #define BLYNK_AUTH_TOKEN "YourAuthToken"
-        ```
-
-### Customizing Other Services
-
-Inside the `src/config.h` file, you can also configure your:
-*   **WiFi Credentials** (`WIFI_SSID`, `WIFI_PASS`)
-*   **MQTT Broker** settings
-*   **Firebase** Database URL and authentication
-*   **Telegram Bot Token** and Chat ID
+### 5. Advanced System Features
+- **Deep Sleep:** Enters low power mode after 5 minutes of inactivity to save energy.
+- **OTA Updates:** Supports remote over-the-air firmware updates via ArduinoOTA.
 
 ---
 
-*Powered by PlatformIO and ESP32.*
+## 🛠 Project Configuration
+
+All major configurations (WiFi, MQTT, Firebase, Blynk, Telegram) are located in `src/config.h`. 
+
+### Configuring Blynk IoT (New Version)
+This project uses the modern **Blynk IoT** platform (non-blocking initialization). To set it up:
+
+1. **Create a Template:** Go to the [Blynk Web Console](https://blynk.cloud/) and create a new Template named `smart home` (Hardware: ESP32, Connection: WiFi).
+2. **Define Datastreams:** Create the following Virtual Pins in your template:
+   - `V0` (Integer): Gas Level
+   - `V1` (Integer/String): Distance (cm)
+   - `V2` (Integer): Motion detected (1/0)
+   - `V3` (String): Alert Messages
+   - `V4` (Integer): Distance Alert Level (1-3)
+3. **Copy Credentials:** Once you add a new Device from this template, copy the credentials block provided by Blynk and paste it into `src/config.h`:
+   ```cpp
+   #define BLYNK_TEMPLATE_ID "TMPLxxxxxx"
+   #define BLYNK_TEMPLATE_NAME "smart home"
+   #define BLYNK_AUTH_TOKEN "Your_Auth_Token_Here"
+   ```
+4. **Compile & Upload:** The system will automatically use these credentials to securely connect to the Blynk server without blocking other tasks like MQTT or Firebase.
+
+---
+
+### Hardware Usage Note (ESP32-S3)
+If you are facing issues uploading code (e.g. `pio run -t upload` fails), it is usually because the ESP32-S3 native USB COM port has not been recognized. 
+**To Fix Uploading:**
+1. Connect the ESP32-S3 to your PC via a data USB cable.
+2. Hold down the **BOOT** button (usually marked 0 or BOOT) on the board.
+3. While holding **BOOT**, click the **EN** (or RST) button once.
+4. Release the **BOOT** button.
+5. Your computer should now recognize the COM port, and `pio run -t upload` will succeed.

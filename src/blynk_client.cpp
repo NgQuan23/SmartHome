@@ -9,7 +9,8 @@ void blynkInit(){
     Serial.println("Blynk: WiFi not connected, skipping Blynk init");
     return;
   }
-  Blynk.begin(BLYNK_AUTH_TOKEN, WIFI_SSID, WIFI_PASS);
+  Blynk.config(BLYNK_AUTH_TOKEN);
+  Blynk.connect();
   Serial.println("Blynk initialized");
 }
 
