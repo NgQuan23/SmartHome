@@ -3,8 +3,8 @@
 #define CONFIG_H
 
 
-#define WIFI_SSID "Z-Device"
-#define WIFI_PASS "Trungkien27062004"
+#define WIFI_SSID "Quan"
+#define WIFI_PASS "88888888"
 
 
 #define MQTT_SERVER "broker.hivemq.com"
