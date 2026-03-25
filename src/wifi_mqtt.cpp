@@ -26,7 +26,7 @@ void wifiInit(){
   Serial.println();
   if (WiFi.status() == WL_CONNECTED) {
     Serial.printf("WiFi connected, IP: %s\n", WiFi.localIP().toString().c_str());
-    storageFlush();
+    // Note: storageFlush moved to after Firebase init in main.cpp
   } else {
     Serial.println("WiFi not connected (continuing offline)");
   }

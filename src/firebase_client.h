@@ -2,4 +2,6 @@
 #include <Arduino.h>
 
 void firebaseInit();
-void firebasePushTelemetry(int gas, float distance, bool motion);
+bool firebasePushTelemetry(int gas, float distance, bool motion, bool queueOnFailure = true);
+bool firebasePushTelemetryPayload(const String &payload, bool queueOnFailure = true);
+bool firebaseIsReady();

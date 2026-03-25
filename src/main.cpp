@@ -27,6 +27,7 @@ const int GAS_THRESHOLD = 1500;
 const int MQ2_SAMPLES = 8;      
 const unsigned long PIR_COOLDOWN_MS = 3000; 
 const unsigned long SENSOR_POLL_MS = 500;   
+const unsigned long STORAGE_FLUSH_MS = 30000;
 
 
 void readSensors();
@@ -83,6 +84,7 @@ void setup() {
   firebaseInit();
   blynkInit();
   storageInit();
+  storageFlush();  // Flush stored events after Firebase is ready
   otaInit();
 }
 
@@ -99,6 +101,12 @@ void loop() {
   blynkRun();
   #endif
   if (WiFi.status() == WL_CONNECTED) ArduinoOTA.handle();
+
+  static unsigned long lastStorageFlush = 0;
+  if (now - lastStorageFlush >= STORAGE_FLUSH_MS) {
+    lastStorageFlush = now;
+    storageFlush();
+  }
 
 
   static unsigned long lastActive = 0;
@@ -154,11 +162,13 @@ void readSensors(){
   doc["motion"] = motion ? 1 : 0;
   char buf[192];
   size_t n = serializeJson(doc, buf);
-  bool ok = mqttPublish(TELEMETRY_TOPIC, buf);
-  if (!ok) storageAppend(String(buf));
-
-
-  firebasePushTelemetry(gasValue, distance, motion);
+  (void)n;
+  String telemetryPayload(buf);
+  bool mqttOk = mqttPublish(TELEMETRY_TOPIC, telemetryPayload.c_str());
+  bool firebaseOk = firebasePushTelemetryPayload(telemetryPayload, false);
+  if (!mqttOk || !firebaseOk) {
+    storageAppend(telemetryPayload);
+  }
   blynkPublishTelemetry(gasValue, distance, motion, distanceLevel);
 
 

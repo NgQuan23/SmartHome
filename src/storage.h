@@ -2,5 +2,6 @@
 #include <Arduino.h>
 
 void storageInit();
-void storageAppend(const String &jsonLine);
+bool storageAppend(const String &jsonLine);
 void storageFlush();
+bool storageAvailable();

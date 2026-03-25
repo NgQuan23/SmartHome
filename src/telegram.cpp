@@ -2,6 +2,7 @@
 #include "config.h"
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
+#include <ArduinoJson.h>
 
 String urlencode(const String &str){
   String encoded = "";
@@ -20,21 +21,52 @@ String urlencode(const String &str){
   return encoded;
 }
 
-void telegramSend(const String &message){
-  if (!ENABLE_TELEGRAM) return;
-  if (WiFi.status() != WL_CONNECTED) return;
+bool telegramSend(const String &message){
+  if (!ENABLE_TELEGRAM) return false;
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Telegram skipped: WiFi not connected");
+    return false;
+  }
+  if (String(TG_BOT_TOKEN).length() == 0 || String(TG_CHAT_ID).length() == 0) {
+    Serial.println("Telegram skipped: missing bot token or chat id");
+    return false;
+  }
+
   WiFiClientSecure client;
-  client.setInsecure(); 
+  client.setInsecure();
+  client.setTimeout(15000);
   HTTPClient https;
+  https.setTimeout(15000);
   String url = String("https://api.telegram.org/bot") + String(TG_BOT_TOKEN) + "/sendMessage";
-  https.begin(client, url);
+  if (!https.begin(client, url)) {
+    Serial.println("Telegram failed: unable to start HTTPS client");
+    return false;
+  }
   https.addHeader("Content-Type", "application/x-www-form-urlencoded");
   String post = "chat_id=" + String(TG_CHAT_ID) + "&text=" + urlencode(message);
   int httpCode = https.POST(post);
+  String response;
   if (httpCode > 0) {
-    Serial.printf("Telegram sent, code=%d\n", httpCode);
+    response = https.getString();
+  }
+
+  bool ok = false;
+  if (httpCode > 0) {
+    StaticJsonDocument<512> doc;
+    DeserializationError err = deserializeJson(doc, response);
+    if (httpCode == HTTP_CODE_OK && !err && doc["ok"] == true) {
+      long messageId = doc["result"]["message_id"] | 0L;
+      Serial.printf("Telegram sent, code=%d, message_id=%ld\n", httpCode, messageId);
+      ok = true;
+    } else if (err) {
+      Serial.printf("Telegram failed, code=%d, invalid JSON response: %s\n", httpCode, response.c_str());
+    } else {
+      const char *description = doc["description"] | "unknown Telegram API error";
+      Serial.printf("Telegram failed, code=%d, api_error=%s\n", httpCode, description);
+    }
   } else {
     Serial.printf("Telegram failed, err=%s\n", https.errorToString(httpCode).c_str());
   }
   https.end();
+  return ok;
 }

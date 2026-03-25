@@ -10,8 +10,11 @@ void blynkInit(){
     return;
   }
   Blynk.config(BLYNK_AUTH_TOKEN);
-  Blynk.connect();
-  Serial.println("Blynk initialized");
+  if (Blynk.connect(5000)) {  // 5 second timeout
+    Serial.println("Blynk initialized");
+  } else {
+    Serial.println("Blynk: connection failed (timeout)");
+  }
 }
 
 void blynkPublishTelemetry(int gas, float distance, bool motion, int distanceLevel){
