@@ -9,16 +9,15 @@ void blynkInit(){
     Serial.println("Blynk: WiFi not connected, skipping Blynk init");
     return;
   }
+  Serial.println("Blynk: Initializing with auth token...");
   Blynk.config(BLYNK_AUTH_TOKEN);
-  if (Blynk.connect(5000)) {  // 5 second timeout
-    Serial.println("Blynk initialized");
-  } else {
-    Serial.println("Blynk: connection failed (timeout)");
-  }
+  Blynk.connect();
+  Serial.println("Blynk: Connection initiated (will connect in background)");
 }
 
 void blynkPublishTelemetry(int gas, float distance, bool motion, int distanceLevel){
-
+  if (!Blynk.connected()) return;
+  
   Blynk.virtualWrite(V0, gas);
   if (distance < 0) Blynk.virtualWrite(V1, "--");
   else Blynk.virtualWrite(V1, (int)distance);
@@ -27,7 +26,7 @@ void blynkPublishTelemetry(int gas, float distance, bool motion, int distanceLev
 }
 
 void blynkNotify(const char* msg){
-
+  if (!Blynk.connected()) return;
   Blynk.virtualWrite(V3, msg);
 }
 

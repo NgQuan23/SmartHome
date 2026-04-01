@@ -20,12 +20,12 @@
 #define OTA_HOSTNAME "SmartHome_Device"
 
 
-#define FIREBASE_DATABASE_URL "https://console.firebase.google.com/u/0/project/smart-home-1c235/settings/general/web:NjgxYzMxMzgtZDA4Yi00YmUxLTgyOGUtY2ViMzBlMGIyMTNi?nonce=1769660682987"
+#define FIREBASE_DATABASE_URL "https://smart-home-1c235.firebaseio.com"
 #define FIREBASE_PROJECT_ID "smart-home-1c235"
 #define FIREBASE_API_KEY "AIzaSyAPHaUEbzXHmLfCRPRqJ27c4NPZIVfFyk8"
 
 
-#define FIREBASE_HOST FIREBASE_DATABASE_URL
+#define FIREBASE_HOST "smart-home-1c235.firebaseio.com"
 
 
 #define FIREBASE_USER_EMAIL "quanylksnb@gmail.com"
