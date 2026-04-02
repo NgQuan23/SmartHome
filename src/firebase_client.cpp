@@ -39,7 +39,9 @@ String resolveFirebaseDatabaseUrl(){
     }
 
     firebaseUrlDerived = true;
-    url = "https://" + projectId + "-default-rtdb.firebaseio.com/";
+    url = "https://";
+    url += projectId;
+    url += "-default-rtdb.firebaseio.com/";
   }
 
   if (url.length() == 0) {
@@ -47,7 +49,9 @@ String resolveFirebaseDatabaseUrl(){
   }
 
   if (!url.startsWith("http://") && !url.startsWith("https://")) {
-    url = "https://" + url;
+    String temp = "https://";
+    temp += url;
+    url = temp;
   }
   if (!url.endsWith("/")) {
     url += "/";
@@ -58,7 +62,7 @@ String resolveFirebaseDatabaseUrl(){
 
 bool hasFirebaseCredentials(){
   return (String(FIREBASE_USER_EMAIL).length() > 0 && String(FIREBASE_USER_PASSWORD).length() > 0) ||
-         String(FIREBASE_DATABASE_SECRET).length() > 0;
+        String(FIREBASE_DATABASE_SECRET).length() > 0;
 }
 
 bool buildFirebaseJson(const String &payload, FirebaseJson &json){
