@@ -12,14 +12,6 @@
 #include "storage.h"
 #include "esp_sleep.h"
 
-// ESP32-S3 compatible pins
-#define PIN_MQ2       4  // ADC1 channel on ESP32-S3
-#define PIN_PIR       5  
-#define PIN_TRIG      6  
-#define PIN_ECHO      7 
-#define PIN_BUZZER    15 
-#define PIN_RELAY     16 
-
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 
@@ -46,8 +38,8 @@ void setup() {
   Serial.println("\n\n=== SmartHome Starting ===");
   Serial.flush();
 
-#if defined(ESP32) && !defined(CONFIG_IDF_TARGET_ESP32S3)
-  // Only for original ESP32, not ESP32-S3
+#ifdef ESP32
+  analogReadResolution(12);
   analogSetPinAttenuation(PIN_MQ2, ADC_11db);
 #endif
 
@@ -65,7 +57,7 @@ void setup() {
   digitalWrite(PIN_BUZZER, LOW);
 
   Serial.println("Initializing LCD...");
-  Wire.begin(8, 9);  // ESP32-S3 default I2C pins: SDA=8, SCL=9
+  Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
   lcd.init();
   lcd.backlight();
   lcd.setCursor(0, 0);
@@ -81,8 +73,8 @@ void setup() {
   wifiInit();
   mqttInit();
 
-  firebaseInit();
   blynkInit();
+  firebaseInit();
   storageInit();
   storageFlush();  // Flush stored events after Firebase is ready
   otaInit();
@@ -96,10 +88,6 @@ void loop() {
   }
 
   mqttLoop();
-
-  #if ENABLE_BLYNK
-  blynkRun();
-  #endif
   if (WiFi.status() == WL_CONNECTED) ArduinoOTA.handle();
 
   static unsigned long lastStorageFlush = 0;
@@ -165,8 +153,8 @@ void readSensors(){
   (void)n;
   String telemetryPayload(buf);
   bool mqttOk = mqttPublish(TELEMETRY_TOPIC, telemetryPayload.c_str());
-  bool firebaseOk = firebasePushTelemetryPayload(telemetryPayload, false);
-  if (!mqttOk || !firebaseOk) {
+  firebasePushTelemetryPayload(telemetryPayload, true);
+  if (!mqttOk) {
     storageAppend(telemetryPayload);
   }
   blynkPublishTelemetry(gasValue, distance, motion, distanceLevel);

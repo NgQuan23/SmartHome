@@ -114,7 +114,37 @@ Sản phẩm cần đảm bảo:
 - Quản lý user hoặc account trên backend.
 - Data Connect schema hiện tại, vì nội dung schema không phù hợp domain Smart Home.
 
-## 7. User Stories
+## 7. Hardware Target And Pin Mapping
+
+### 7.1 Board Target For Current Firmware
+
+- Target board: ESP32-S3 Super Mini.
+- PlatformIO environment: `esp32-s3-devkitc-1` với board definition `esp32-s3-mini`.
+- Firmware phải dùng pin map tập trung trong `src/config.h` để tránh hard-code pin trong `src/main.cpp`.
+
+### 7.2 Pin Mapping For Sensor And Actuator Wiring
+
+| Module | Chân module | GPIO ESP32-S3 Super Mini | Firmware macro | Purpose |
+|---|---|---|---|---|
+| MQ2 gas sensor | `AO` | `GPIO4` | `PIN_MQ2` | Đọc analog nồng độ gas |
+| PIR motion sensor | `OUT` | `GPIO5` | `PIN_PIR` | Phát hiện chuyển động |
+| HC-SR04 | `TRIG` | `GPIO6` | `PIN_TRIG` | Phát xung đo khoảng cách |
+| HC-SR04 | `ECHO` | `GPIO7` | `PIN_ECHO` | Đọc xung phản hồi khoảng cách |
+| LCD I2C 16x2 | `SDA` | `GPIO8` | `PIN_I2C_SDA` | Dữ liệu I2C cho LCD |
+| Buzzer | `SIG` | `GPIO15` | `PIN_BUZZER` | Còi cảnh báo tại chỗ |
+| Relay quạt / relay chính | `IN` | `GPIO16` | `PIN_RELAY` / `PIN_FAN_RELAY` | Điều khiển relay tải hoặc quạt |
+| Relay van gas | `IN` | `GPIO17` | `PIN_VALVE_RELAY` | Khóa hoặc mở van gas |
+| LCD I2C 16x2 | `SCL` | `GPIO18` | `PIN_I2C_SCL` | Clock I2C cho LCD |
+
+### 7.3 Wiring Constraints
+
+- Không dùng `GPIO9` đến `GPIO14` cho cảm biến ngoài vì đây là nhóm chân nhạy cảm liên quan flash của board.
+- Tránh dùng `GPIO0`, `GPIO3`, `GPIO19`, `GPIO20`, `GPIO45`, `GPIO46` cho wiring cảm biến thường trực để không gây rủi ro boot mode hoặc xung đột USB/JTAG.
+- `HC-SR04 ECHO` không được nối trực tiếp 5V vào ESP32-S3; bắt buộc hạ mức xuống 3.3V bằng cầu chia áp hoặc level shifter.
+- `MQ2 AO` chỉ được đưa vào `GPIO4` khi tín hiệu analog tối đa 3.3V. Nếu module MQ2 chạy 5V, phải dùng mạch chia áp cho chân `AO`.
+- Nếu LCD I2C hoặc relay module dùng nguồn `5V`, phải bảo đảm các đường tín hiệu giao tiếp với ESP32-S3 vẫn là mức `3.3V` an toàn.
+
+## 8. User Stories
 
 1. Là chủ nhà, tôi muốn nhận cảnh báo ngay khi gas vượt ngưỡng nguy hiểm để có thể xử lý sớm trước khi xảy ra sự cố lớn.
 2. Là chủ nhà, tôi muốn hệ thống tự động bật quạt hoặc khóa van gas ở các mức cảnh báo xác định để giảm rủi ro ngay cả khi tôi không ở nhà.
@@ -123,7 +153,7 @@ Sản phẩm cần đảm bảo:
 5. Là người dùng, tôi muốn hệ thống vẫn thu thập và giữ lại dữ liệu khi mất mạng ngắn hạn để tránh mất log sự kiện.
 6. Là người bảo trì, tôi muốn cập nhật firmware OTA khi thiết bị đang kết nối để tránh phải tháo lắp phần cứng không cần thiết.
 
-## 8. Feature Table
+## 9. Feature Table
 
 | ID | Feature | Priority | Description | Dependencies | Current Status |
 |---|---|---|---|---|---|
@@ -139,7 +169,7 @@ Sản phẩm cần đảm bảo:
 | F10 | Remote Command Execution | Could | Nhận lệnh qua MQTT hoặc Blynk để điều khiển thiết bị từ xa | Command model, auth, actuator rules | Not implemented |
 | F11 | Historical Dashboard | Could | Cung cấp giao diện đọc lịch sử, biểu đồ và trạng thái cảnh báo | Backend, frontend | Not implemented |
 
-## 9. Functional Requirements
+## 10. Functional Requirements
 
 ### F1. Gas Leak Monitoring
 
@@ -202,7 +232,7 @@ Sản phẩm cần đảm bảo:
 - Nếu triển khai trong giai đoạn sau, hệ thống phải có command schema rõ ràng.
 - Remote commands phải có xác thực và giới hạn tác động với relay hoặc van gas.
 
-## 10. Acceptance Criteria
+## 11. Acceptance Criteria
 
 ### AC1. Gas Alert Levels
 

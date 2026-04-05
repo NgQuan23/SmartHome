@@ -3,8 +3,8 @@
 #define CONFIG_H
 
 
-#define WIFI_SSID "Quan"
-#define WIFI_PASS "88888888"
+#define WIFI_SSID "parkytown"
+#define WIFI_PASS "thisismyserver"
 
 
 #define MQTT_SERVER "broker.hivemq.com"
@@ -20,12 +20,12 @@
 #define OTA_HOSTNAME "SmartHome_Device"
 
 
-#define FIREBASE_DATABASE_URL "https://smart-home-1c235.firebaseio.com"
+#define FIREBASE_DATABASE_URL "https://smart-home-1c235-default-rtdb.asia-southeast1.firebasedatabase.app"
 #define FIREBASE_PROJECT_ID "smart-home-1c235"
 #define FIREBASE_API_KEY "AIzaSyAPHaUEbzXHmLfCRPRqJ27c4NPZIVfFyk8"
 
 
-#define FIREBASE_HOST "smart-home-1c235.firebaseio.com"
+#define FIREBASE_HOST "smart-home-1c235-default-rtdb.asia-southeast1.firebasedatabase.app"
 
 
 #define FIREBASE_USER_EMAIL "quanylksnb@gmail.com"
@@ -51,6 +51,19 @@
 #define ENABLE_BLYNK 1
 #define ENABLE_TELEGRAM 1
 
+// ESP32-S3 Super Mini wiring map for the SmartHome board.
+// Avoid GPIO0/GPIO3/GPIO19/GPIO20/GPIO45/GPIO46 and flash-connected GPIO9-14.
+#define PIN_MQ2 4
+#define PIN_PIR 5
+#define PIN_TRIG 6
+#define PIN_ECHO 7
+#define PIN_I2C_SDA 8
+#define PIN_BUZZER 15
+#define PIN_RELAY 16
+#define PIN_FAN_RELAY PIN_RELAY
+#define PIN_VALVE_RELAY 17
+#define PIN_I2C_SCL 18
+
 
 #define GAS_LEVEL_1 800   
 #define GAS_LEVEL_2 1400  
@@ -60,10 +73,6 @@
 #define DIST_LEVEL_1 150  
 #define DIST_LEVEL_2 5    
 #define DIST_LEVEL_3 2    
-
-
-#define PIN_FAN_RELAY PIN_RELAY
-#define PIN_VALVE_RELAY 17 
 
 
 #define ENABLE_DEEP_SLEEP 0

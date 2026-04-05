@@ -56,13 +56,18 @@ Mở file `src/config.h` và chỉnh sửa các tham số sau theo thông tin tr
 ## 📡 Cấu hình các Dịch vụ khác
 
 ### Firebase Realtime Database
-Trong `config.h`, cập nhật API Key, Database URL và e-mail đăng nhập:
+Trong `config.h`, firmware ESP32 chỉ dùng trực tiếp các trường RTDB/auth sau:
 ```c
-#define FIREBASE_DATABASE_URL "https://xxxx.firebaseio.com"
+#define FIREBASE_DATABASE_URL "https://smart-home-1c235-default-rtdb.asia-southeast1.firebasedatabase.app"
+#define FIREBASE_PROJECT_ID "smart-home-1c235"
 #define FIREBASE_API_KEY "AIzaSyxxxxxx"
 #define FIREBASE_USER_EMAIL "email@gmail.com"
 #define FIREBASE_USER_PASSWORD "password123"
 ```
+
+Lưu ý:
+- `authDomain`, `storageBucket`, `appId`, `messagingSenderId`, `measurementId` là cấu hình cho Web SDK; firmware ESP32 hiện không dùng các trường đó.
+- Nếu `Firebase Authentication` chưa bật phương thức `Email/Password` hoặc user đăng nhập không hợp lệ, firmware sẽ không lấy được token và Serial sẽ báo lỗi kiểu `CONFIGURATION_NOT_FOUND`.
 
 ### Telegram Bot
 Dùng [BotFather](https://t.me/BotFather) để tạo bot và lấy `TG_BOT_TOKEN`. Lấy Chat ID của bạn (qua @userinfobot) và cập nhật:
@@ -79,3 +84,23 @@ pio run -e esp32-s3-devkitc-1 -t upload
 ```
 
 _Bản cập nhật hiện tại đã vô hiệu hoá Deep Sleep nhằm đảm bảo tính toàn vẹn của Serial Port và duy trì Blynk Server không bị disconnect_._
+
+## 🔌 Pin map cho ESP32-S3 Super Mini
+
+Sơ đồ chân firmware hiện tại được chuẩn hóa cho board `ESP32-S3 Super Mini` như sau:
+
+| Thiết bị | Chân trên cảm biến/module | GPIO ESP32-S3 Super Mini | Ghi chú |
+|---|---|---|---|
+| MQ2 | `AO` | `GPIO4` | Chỉ đưa tín hiệu analog tối đa 3.3V vào ESP32-S3. Nếu module MQ2 chạy 5V, cần chia áp cho `AO`. |
+| PIR | `OUT` | `GPIO5` | Mức logic vào phải là 3.3V-safe. |
+| HC-SR04 | `TRIG` | `GPIO6` | Output từ ESP32-S3 sang cảm biến. |
+| HC-SR04 | `ECHO` | `GPIO7` | Bắt buộc qua cầu chia áp/level shifter xuống 3.3V trước khi vào ESP32-S3. |
+| LCD I2C 16x2 | `SDA` | `GPIO8` | I2C được remap trong firmware. |
+| LCD I2C 16x2 | `SCL` | `GPIO18` | Tránh dùng `GPIO9` để không đụng vùng chân nhạy cảm của board. |
+| Buzzer | `SIG` | `GPIO15` | Dùng output số. |
+| Relay quạt / relay chính | `IN` | `GPIO16` | Hiện firmware dùng chân này cho `PIN_RELAY` và `PIN_FAN_RELAY`. |
+| Relay van gas | `IN` | `GPIO17` | Output số riêng cho van gas. |
+
+Khuyến nghị nguồn:
+- Cấp `3.3V` cho các tín hiệu logic đi vào ESP32-S3.
+- Nếu dùng module relay, MQ2 hoặc LCD chạy `5V`, chỉ cho phép phần `VCC` dùng `5V`; các chân tín hiệu vào ESP32-S3 vẫn phải bảo đảm mức `3.3V`.

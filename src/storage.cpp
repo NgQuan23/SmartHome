@@ -1,5 +1,7 @@
 #include "storage.h"
 #include <LittleFS.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 #include "config.h"
 #include "wifi_mqtt.h"
 #include "firebase_client.h"
@@ -8,6 +10,29 @@
 static const char *STORAGE_PATH = "/events.log";
 static const char *STORAGE_TMP_PATH = "/events.tmp";
 static bool storageMounted = false;
+static SemaphoreHandle_t storageMutex = nullptr;
+
+class StorageLockGuard {
+public:
+  StorageLockGuard() : locked(false) {
+    if (storageMutex && xSemaphoreTakeRecursive(storageMutex, portMAX_DELAY) == pdTRUE) {
+      locked = true;
+    }
+  }
+
+  ~StorageLockGuard() {
+    if (locked) {
+      xSemaphoreGiveRecursive(storageMutex);
+    }
+  }
+
+  bool ok() const {
+    return locked;
+  }
+
+private:
+  bool locked;
+};
 
 static bool mountStorage(bool formatOnFail){
   if (!LittleFS.begin(formatOnFail)) {
@@ -27,6 +52,20 @@ static bool mountStorage(bool formatOnFail){
 }
 
 void storageInit(){
+  if (!storageMutex) {
+    storageMutex = xSemaphoreCreateRecursiveMutex();
+  }
+  if (!storageMutex) {
+    Serial.println("LittleFS mutex creation failed");
+    return;
+  }
+
+  StorageLockGuard lock;
+  if (!lock.ok()) {
+    Serial.println("LittleFS lock failed during init");
+    return;
+  }
+
   storageMounted = mountStorage(true);
   if (!storageMounted){
     Serial.println("LittleFS mount failed");
@@ -45,6 +84,17 @@ bool storageAvailable(){
 }
 
 bool storageAppend(const String &jsonLine){
+  if (!storageMutex) {
+    Serial.println("Storage append skipped: mutex unavailable");
+    return false;
+  }
+
+  StorageLockGuard lock;
+  if (!lock.ok()) {
+    Serial.println("Storage append skipped: lock failed");
+    return false;
+  }
+
   if (!storageMounted) {
     Serial.println("Storage append skipped: LittleFS unavailable");
     return false;
@@ -66,6 +116,17 @@ bool storageAppend(const String &jsonLine){
 }
 
 void storageFlush(){
+  if (!storageMutex) {
+    Serial.println("storageFlush: mutex unavailable, skipping");
+    return;
+  }
+
+  StorageLockGuard lock;
+  if (!lock.ok()) {
+    Serial.println("storageFlush: failed to acquire lock");
+    return;
+  }
+
   if (!storageMounted) {
     Serial.println("storageFlush: LittleFS unavailable, skipping");
     return;
@@ -96,7 +157,7 @@ void storageFlush(){
     if (line.length() == 0) continue;
 
     bool mqttOk = mqttPublish(TELEMETRY_TOPIC, line.c_str());
-    bool firebaseOk = firebasePushTelemetryPayload(line, false);
+    bool firebaseOk = firebasePushTelemetryPayload(line, true);
     if (mqttOk && firebaseOk) {
       ++flushedCount;
       delay(50);
