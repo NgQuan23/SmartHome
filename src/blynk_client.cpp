@@ -1,6 +1,8 @@
 #include "blynk_client.h"
 #include "config.h"
 #if ENABLE_BLYNK
+#define BLYNK_PRINT Serial
+#define BLYNK_DEBUG
 #include <WiFi.h>
 #include <BlynkSimpleEsp32.h>
 
@@ -9,10 +11,11 @@ void blynkInit(){
     Serial.println("Blynk: WiFi not connected, skipping Blynk init");
     return;
   }
-  Serial.println("Blynk: Initializing with auth token...");
-  Blynk.config(BLYNK_AUTH_TOKEN);
-  Blynk.connect();
-  Serial.println("Blynk: Connection initiated (will connect in background)");
+  Serial.println("Blynk: Configuring New Blynk cloud...");
+  Blynk.config(BLYNK_AUTH_TOKEN, "blynk.cloud", 80);
+  // Removed Blynk.connect() to prevent blocking during initialization.
+  // Blynk.run() will attempt to connect in the background.
+  Serial.println("Blynk: Setup complete (will connect in background)");
 }
 
 void blynkPublishTelemetry(int gas, float distance, bool motion, int distanceLevel){

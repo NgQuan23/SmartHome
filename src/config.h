@@ -66,7 +66,7 @@
 #define PIN_VALVE_RELAY 17 
 
 
-#define ENABLE_DEEP_SLEEP 1
+#define ENABLE_DEEP_SLEEP 0
 #define IDLE_TIMEOUT_MS (5 * 60 * 1000UL) 
 
 #endif 

@@ -1,65 +1,81 @@
 # Smart Home Security & Monitoring System
 
-This project is an ESP32-S3 based Smart Home system focusing on security, environmental monitoring, and remote alerting.
+Dự án này là hệ thống nhà thông minh giám sát các rò rỉ khí gas, khoảng cách với chướng ngại vật/con người, tích hợp các cơ chế cảnh báo và phản hồi thời gian thực qua Web, Telegram và Blynk (IoT Cloud). 
 
-## 🌟 Key Features
+Dự án được xây dựng cho ESP32-S3 (có thể tương thích với các dòng ESP32 khác) và hỗ trợ cập nhật Firmware OTA.
 
-### 1. Gas Leak & Fire Detection (MQ-2 Sensor)
-- **Level 1 (Warning):** Detects slight gas presence. Local LCD warning.
-- **Level 2 (Leak):** Triggers exhaust fan relay to clear air, sends mobile notifications.
-- **Level 3 (Fire/Emergency):** Triggers loud buzzer, cuts gas valve (relay), shows critical alert on LCD, and sends immediate push notifications.
+## 🌟 Các tính năng chính (Current Features)
 
-### 2. Intrusion & Proximity Alert (PIR & HC-SR04)
-- **Human Detection (PIR):** Detects motion; wakes screen and sends alerts.
-- **Proximity Alert (Ultrasonic):** 
-  - *Warning:* Object near (Warning beep & notification).
-  - *Critical:* Object too close (Constant alarm & cuts main power via relay).
+1. **Giám sát khí Gas (MQ2 Sensor)**
+   - Liên tục đánh giá mức độ rò rỉ khí qua Analog pin.
+   - 3 Cấp độ báo động:
+     - **Mức độ 1 (Low Leak)**: Phát hiện rò rỉ nhẹ, hiển thị lên màn hình.
+     - **Mức độ 2 (High Leak)**: Rò rỉ cao. Kích hoạt quạt hút gas (FAN Relay) chạy tự động, hiển thị cảnh báo, báo Telegram và Blynk.
+     - **Mức độ 3 (FIRE/CRITICAL)**: Nồng độ báo động cháy. Khóa ngay van cung cấp Gas (VALVE Relay), hú Còi (BUZZER), cảnh báo Telegram & Blynk liên tục.
 
-### 3. Multi-Channel Notifications
-- **Local Alerts:** 16x2 I2C LCD Display and active Buzzer.
-- **Telegram Bot:** Real-time chat messages for alerts.
-- **Blynk IoT:** Mobile app dashboard for real-time telemetry (Virtual Pins V0-V4) and popup notifications.
+2. **Cảm biến khi bị ngập nước (Siêu âm HC-SR04)**
+   - Cảnh báo khoảng cách an toàn. Tuỳ thuộc vào độ dài (Distance Level), hệ thống sẽ hú còi.
+   - Nếu ở mức độ nguy hiểm nhất (bị chắn sát), hệ thống sẽ tự động gửi cảnh báo khẩn và ngắt relay mạch.
 
-### 4. Cloud & Data Integrations
-- **Firebase RTDB:** Logs sensor data directly to a Firebase project.
-- **MQTT:** Publishes JSON telemetry data to an MQTT broker (`smarthome/device1/telemetry`) and subscribes to commands.
-- **Offline Storage:** Queues messages locally if WiFi drops, and resends them when back online.
+3. **Cảm biến chuyển động khi có người lạ xâm nhập (PIR Motion Detection)**
+   - Nhận diện sự xuất hiện của người. Gửi tín hiệu báo động lên màn hình và hú còi nhẹ 1 lần, ghi nhận hoạt động.
 
-### 5. Advanced System Features
-- **Deep Sleep:** Enters low power mode after 5 minutes of inactivity to save energy.
-- **OTA Updates:** Supports remote over-the-air firmware updates via ArduinoOTA.
+4. **Hiển thị trực quan (LCD I2C 16x2)**
+   - Cung cấp cái nhìn trực tiếp từ các cảm biến qua màn hình.
 
----
+5. **Lưu trữ & Đồng bộ đa nền tảng**
+   - Đẩy thông số (Telemetry) liên tục đến **Blynk Cloud**, **Firebase** và **MQTT Broker** (HiveMQ).
+   - *Tính năng Offline Sync*: Nếu mất kết nối trong ngắn hạn, dữ liệu sẽ được trữ tạm vào Flash memory (`storageAppend()`) và đồng bộ ngược lên máy chủ (`storageFlush()`) ngay sau khi có mạng.
 
-## 🛠 Project Configuration
+6. **Telegram Notification Bot**
+   - Đẩy thẳng tin nhắn tới tài khoản Telegram hoặc Group Chat khi có cảnh báo nguy hiểm (Cháy, Vượt ngưỡng Gas, Vật cản quá gần).
 
-All major configurations (WiFi, MQTT, Firebase, Blynk, Telegram) are located in `src/config.h`. 
+## ⚙️ Cấu hình "New Blynk" (Blynk IoT)
 
-### Configuring Blynk IoT (New Version)
-This project uses the modern **Blynk IoT** platform (non-blocking initialization). To set it up:
+Hệ thống đã được chuyển đổi tương thích với **New Blynk Cloud (blynk.cloud)**. Bạn không cần kết nối tới Local Server hay blynk-cloud.com cũ nữa. 
 
-1. **Create a Template:** Go to the [Blynk Web Console](https://blynk.cloud/) and create a new Template named `smart home` (Hardware: ESP32, Connection: WiFi).
-2. **Define Datastreams:** Create the following Virtual Pins in your template:
-   - `V0` (Integer): Gas Level
-   - `V1` (Integer/String): Distance (cm)
-   - `V2` (Integer): Motion detected (1/0)
-   - `V3` (String): Alert Messages
-   - `V4` (Integer): Distance Alert Level (1-3)
-3. **Copy Credentials:** Once you add a new Device from this template, copy the credentials block provided by Blynk and paste it into `src/config.h`:
-   ```cpp
-   #define BLYNK_TEMPLATE_ID "TMPLxxxxxx"
-   #define BLYNK_TEMPLATE_NAME "smart home"
-   #define BLYNK_AUTH_TOKEN "Your_Auth_Token_Here"
-   ```
-4. **Compile & Upload:** The system will automatically use these credentials to securely connect to the Blynk server without blocking other tasks like MQTT or Firebase.
+### Cách Setup phần mềm
+Mở file `src/config.h` và chỉnh sửa các tham số sau theo thông tin trên Console của Blynk IoT (https://blynk.cloud):
 
----
+```c
+// Lấy 3 thông số này trên giao diện Info của Device trên Blynk Cloud
+#define BLYNK_TEMPLATE_ID "TMPL_xxxxx"
+#define BLYNK_TEMPLATE_NAME "Smart Home Device"
+#define BLYNK_AUTH_TOKEN "Your_Blynk_Auth_Token"
+```
 
-### Hardware Usage Note (ESP32-S3)
-If you are facing issues uploading code (e.g. `pio run -t upload` fails), it is usually because the ESP32-S3 native USB COM port has not been recognized. 
-**To Fix Uploading:**
-1. Connect the ESP32-S3 to your PC via a data USB cable.
-2. Hold down the **BOOT** button (usually marked 0 or BOOT) on the board.
-3. While holding **BOOT**, click the **EN** (or RST) button once.
-4. Release the **BOOT** button.
-5. Your computer should now recognize the COM port, and `pio run -t upload` will succeed.
+**Lưu ý quan trọng**:
+- Code sử dụng cơ chế kết nối Background không đồng bộ (`Blynk.config` kết hợp `Blynk.run()`) giúp không bị "đóng băng" (block) tiến trình trong thời gian mất mạng hoặc chờ phản hồi từ Firebase/Telegram.
+- Hãy đảm bảo Datasream trên Blynk Cloud tương thích với các logic Virtual Pin hiện tại:
+  - `V0`: Gas Value (integer)
+  - `V1`: Distance (float / int)
+  - `V2`: Motion (1/0)
+  - `V3`: Thông báo dạng chữ (String)
+  - `V4`: Distance Level (1,2,3)
+
+## 📡 Cấu hình các Dịch vụ khác
+
+### Firebase Realtime Database
+Trong `config.h`, cập nhật API Key, Database URL và e-mail đăng nhập:
+```c
+#define FIREBASE_DATABASE_URL "https://xxxx.firebaseio.com"
+#define FIREBASE_API_KEY "AIzaSyxxxxxx"
+#define FIREBASE_USER_EMAIL "email@gmail.com"
+#define FIREBASE_USER_PASSWORD "password123"
+```
+
+### Telegram Bot
+Dùng [BotFather](https://t.me/BotFather) để tạo bot và lấy `TG_BOT_TOKEN`. Lấy Chat ID của bạn (qua @userinfobot) và cập nhật:
+```c
+#define TG_BOT_TOKEN "123456789:ABCDefgh..."
+#define TG_CHAT_ID "0987654321"
+```
+
+## 🛠 Cách nạp Code
+Dự án được quản lý qua **PlatformIO**. 
+Bạn có thể cài đặt extension PlatformIO trên VSCode. Sau đó, kết nối mạch ESP32 (ở đây mình dùng ESP32-S3). Mở terminal và gõ:
+```bash
+pio run -e esp32-s3-devkitc-1 -t upload
+```
+
+_Bản cập nhật hiện tại đã vô hiệu hoá Deep Sleep nhằm đảm bảo tính toàn vẹn của Serial Port và duy trì Blynk Server không bị disconnect_._

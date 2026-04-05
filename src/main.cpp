@@ -42,7 +42,7 @@ const unsigned long ALERT_COOLDOWN_MS = 60000;
 
 void setup() {
   Serial.begin(115200);
-  delay(1000);  // Wait for serial monitor
+  delay(5000); // 5 seconds wait for USB CDC attachment
   Serial.println("\n\n=== SmartHome Starting ===");
   Serial.flush();
 

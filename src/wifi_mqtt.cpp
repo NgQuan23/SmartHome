@@ -16,19 +16,22 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
 
 void wifiInit(){
   Serial.printf("Connecting to WiFi '%s'...\n", WIFI_SSID);
+  WiFi.disconnect(true);
+  delay(1000);
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
   unsigned long start = millis();
-  while (WiFi.status() != WL_CONNECTED && (millis() - start) < 10000) {
-    delay(200);
+  
+  while (WiFi.status() != WL_CONNECTED && (millis() - start) < 20000) { // 20s timeout
+    delay(500);
     Serial.print('.');
   }
   Serial.println();
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.printf("WiFi connected, IP: %s\n", WiFi.localIP().toString().c_str());
-    // Note: storageFlush moved to after Firebase init in main.cpp
+    Serial.printf("WiFi connected successfully. IP: %s\n", WiFi.localIP().toString().c_str());
   } else {
-    Serial.println("WiFi not connected (continuing offline)");
+    Serial.printf("WiFi failed to connect. Error status code: %d\n", WiFi.status());
+    Serial.println("Continuing offline...");
   }
 }
 

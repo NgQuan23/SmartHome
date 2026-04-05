@@ -34,9 +34,9 @@ bool telegramSend(const String &message){
 
   WiFiClientSecure client;
   client.setInsecure();
-  client.setTimeout(15000);
+  client.setTimeout(5000);
   HTTPClient https;
-  https.setTimeout(15000);
+  https.setTimeout(5000);
   String url = String("https://api.telegram.org/bot") + String(TG_BOT_TOKEN) + "/sendMessage";
   if (!https.begin(client, url)) {
     Serial.println("Telegram failed: unable to start HTTPS client");
@@ -52,7 +52,7 @@ bool telegramSend(const String &message){
 
   bool ok = false;
   if (httpCode > 0) {
-    StaticJsonDocument<512> doc;
+    DynamicJsonDocument doc(2048);
     DeserializationError err = deserializeJson(doc, response);
     if (httpCode == HTTP_CODE_OK && !err && doc["ok"] == true) {
       long messageId = doc["result"]["message_id"] | 0L;
@@ -60,6 +60,7 @@ bool telegramSend(const String &message){
       ok = true;
     } else if (err) {
       Serial.printf("Telegram failed, code=%d, invalid JSON response: %s\n", httpCode, response.c_str());
+      if (httpCode == HTTP_CODE_OK) ok = true; // Still mark true if code 200 but failed parsing
     } else {
       const char *description = doc["description"] | "unknown Telegram API error";
       Serial.printf("Telegram failed, code=%d, api_error=%s\n", httpCode, description);
