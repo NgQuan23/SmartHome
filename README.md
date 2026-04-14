@@ -1,6 +1,6 @@
 # Smart Home Security & Monitoring System
 
-Dự án này là hệ thống nhà thông minh giám sát các rò rỉ khí gas, khoảng cách với chướng ngại vật/con người, tích hợp các cơ chế cảnh báo và phản hồi thời gian thực qua Web, Telegram và Blynk (IoT Cloud). 
+Dự án này là hệ thống nhà thông minh giám sát các rò rỉ khí gas, khoảng cách với chướng ngại vật/con người, tích hợp các cơ chế cảnh báo và phản hồi thời gian thực qua Web, Telegram.
 
 Dự án được xây dựng cho ESP32-S3 (có thể tương thích với các dòng ESP32 khác) và hỗ trợ cập nhật Firmware OTA.
 
@@ -10,48 +10,26 @@ Dự án được xây dựng cho ESP32-S3 (có thể tương thích với các 
    - Liên tục đánh giá mức độ rò rỉ khí qua Analog pin.
    - 3 Cấp độ báo động:
      - **Mức độ 1 (Low Leak)**: Phát hiện rò rỉ nhẹ, hiển thị lên màn hình.
-     - **Mức độ 2 (High Leak)**: Rò rỉ cao. Kích hoạt quạt hút gas (FAN Relay) chạy tự động, hiển thị cảnh báo, báo Telegram và Blynk.
-     - **Mức độ 3 (FIRE/CRITICAL)**: Nồng độ báo động cháy. Khóa ngay van cung cấp Gas (VALVE Relay), hú Còi (BUZZER), cảnh báo Telegram & Blynk liên tục.
+     - **Mức độ 2 (High Leak)**: Rò rỉ cao. Kích hoạt quạt hút gas (FAN Relay) chạy tự động, hiển thị cảnh báo, báo Telegram.
+     - **Mức độ 3 (FIRE/CRITICAL)**: Nồng độ báo động cháy. Khóa ngay van cung cấp Gas (VALVE Relay), hú Còi (BUZZER), cảnh báo Telegram liên tục.
 
-2. **Cảm biến khi bị ngập nước (Siêu âm HC-SR04)**
-   - Cảnh báo khoảng cách an toàn. Tuỳ thuộc vào độ dài (Distance Level), hệ thống sẽ hú còi.
-   - Nếu ở mức độ nguy hiểm nhất (bị chắn sát), hệ thống sẽ tự động gửi cảnh báo khẩn và ngắt relay mạch.
+2. **Cảm biến đo mức nước ngập (Siêu âm HC-SR04)**
+   - Cảnh báo khoảng cách an toàn. Khoảng cách đo được càng nhỏ nghĩa là mặt nước càng cao.
+   - Nếu ở mức độ nguy hiểm nhất (nước ngập sát cảm biến), hệ thống sẽ tự động gửi cảnh báo khẩn (Flood Alert) và ngắt relay mạch an toàn.
 
-3. **Cảm biến chuyển động khi có người lạ xâm nhập (PIR Motion Detection)**
-   - Nhận diện sự xuất hiện của người. Gửi tín hiệu báo động lên màn hình và hú còi nhẹ 1 lần, ghi nhận hoạt động.
+3. **Chế độ vắng nhà "Away Mode" & Phát hiện người lạ xâm nhập (PIR Motion Detection)**
+   - Liên tục đồng bộ công tắc `away_mode` từ Firebase 1 giây 1 lần.
+   - Chỉ khi bạn bật Away Mode, tính năng báo động hú còi và cảnh báo khẩn lên màn hình mới được kích hoạt khi phát hiện có chuyển động.
 
 4. **Hiển thị trực quan (LCD I2C 16x2)**
    - Cung cấp cái nhìn trực tiếp từ các cảm biến qua màn hình.
 
 5. **Lưu trữ & Đồng bộ đa nền tảng**
-   - Đẩy thông số (Telemetry) liên tục đến **Blynk Cloud**, **Firebase** và **MQTT Broker** (HiveMQ).
+   - Đẩy thông số (Telemetry) liên tục đến **Firebase** (ghi đè dữ liệu cũ chu kỳ 1 giây/lần) và **MQTT Broker** (HiveMQ).
    - *Tính năng Offline Sync*: Nếu mất kết nối trong ngắn hạn, dữ liệu sẽ được trữ tạm vào Flash memory (`storageAppend()`) và đồng bộ ngược lên máy chủ (`storageFlush()`) ngay sau khi có mạng.
 
 6. **Telegram Notification Bot**
    - Đẩy thẳng tin nhắn tới tài khoản Telegram hoặc Group Chat khi có cảnh báo nguy hiểm (Cháy, Vượt ngưỡng Gas, Vật cản quá gần).
-
-## ⚙️ Cấu hình "New Blynk" (Blynk IoT)
-
-Hệ thống đã được chuyển đổi tương thích với **New Blynk Cloud (blynk.cloud)**. Bạn không cần kết nối tới Local Server hay blynk-cloud.com cũ nữa. 
-
-### Cách Setup phần mềm
-Mở file `src/config.h` và chỉnh sửa các tham số sau theo thông tin trên Console của Blynk IoT (https://blynk.cloud):
-
-```c
-// Lấy 3 thông số này trên giao diện Info của Device trên Blynk Cloud
-#define BLYNK_TEMPLATE_ID "TMPL_xxxxx"
-#define BLYNK_TEMPLATE_NAME "Smart Home Device"
-#define BLYNK_AUTH_TOKEN "Your_Blynk_Auth_Token"
-```
-
-**Lưu ý quan trọng**:
-- Code sử dụng cơ chế kết nối Background không đồng bộ (`Blynk.config` kết hợp `Blynk.run()`) giúp không bị "đóng băng" (block) tiến trình trong thời gian mất mạng hoặc chờ phản hồi từ Firebase/Telegram.
-- Hãy đảm bảo Datasream trên Blynk Cloud tương thích với các logic Virtual Pin hiện tại:
-  - `V0`: Gas Value (integer)
-  - `V1`: Distance (float / int)
-  - `V2`: Motion (1/0)
-  - `V3`: Thông báo dạng chữ (String)
-  - `V4`: Distance Level (1,2,3)
 
 ## 📡 Cấu hình các Dịch vụ khác
 
@@ -83,7 +61,7 @@ Bạn có thể cài đặt extension PlatformIO trên VSCode. Sau đó, kết n
 pio run -e esp32-s3-devkitc-1 -t upload
 ```
 
-_Bản cập nhật hiện tại đã vô hiệu hoá Deep Sleep nhằm đảm bảo tính toàn vẹn của Serial Port và duy trì Blynk Server không bị disconnect_._
+_Bản cập nhật hiện tại đã vô hiệu hoá Deep Sleep nhằm đảm bảo tính toàn vẹn của Serial Port và duy trì kết nối không bị disconnect_._
 
 ## 🔌 Pin map cho ESP32-S3 Super Mini
 
@@ -91,13 +69,13 @@ Sơ đồ chân firmware hiện tại được chuẩn hóa cho board `ESP32-S3 
 
 | Thiết bị | Chân trên cảm biến/module | GPIO ESP32-S3 Super Mini | Ghi chú |
 |---|---|---|---|
-| MQ2 | `AO` | `GPIO4` | Chỉ đưa tín hiệu analog tối đa 3.3V vào ESP32-S3. Nếu module MQ2 chạy 5V, cần chia áp cho `AO`. |
-| PIR | `OUT` | `GPIO5` | Mức logic vào phải là 3.3V-safe. |
-| HC-SR04 | `TRIG` | `GPIO6` | Output từ ESP32-S3 sang cảm biến. |
-| HC-SR04 | `ECHO` | `GPIO7` | Bắt buộc qua cầu chia áp/level shifter xuống 3.3V trước khi vào ESP32-S3. |
+| MQ2 | `AO` | `GPIO1` | Chỉ đưa tín hiệu analog tối đa 3.3V vào ESP32-S3. Nếu module MQ2 chạy 5V, cần chia áp cho `AO`. |
+| PIR | `OUT` | `GPIO4` | Mức logic vào phải là 3.3V-safe. |
+| HC-SR04 | `TRIG` | `GPIO2` | Output từ ESP32-S3 sang cảm biến. |
+| HC-SR04 | `ECHO` | `GPIO3` | Bắt buộc qua cầu chia áp/level shifter xuống 3.3V trước khi vào ESP32-S3. |
 | LCD I2C 16x2 | `SDA` | `GPIO8` | I2C được remap trong firmware. |
-| LCD I2C 16x2 | `SCL` | `GPIO18` | Tránh dùng `GPIO9` để không đụng vùng chân nhạy cảm của board. |
-| Buzzer | `SIG` | `GPIO15` | Dùng output số. |
+| LCD I2C 16x2 | `SCL` | `GPIO9` | |
+| Buzzer | `SIG` | `GPIO5` | Dùng output số. |
 | Relay quạt / relay chính | `IN` | `GPIO16` | Hiện firmware dùng chân này cho `PIN_RELAY` và `PIN_FAN_RELAY`. |
 | Relay van gas | `IN` | `GPIO17` | Output số riêng cho van gas. |
 

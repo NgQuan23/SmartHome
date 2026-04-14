@@ -37,9 +37,11 @@ unsigned long lastFirebasePushLogMs = 0;
 String lastFirebasePushError;
 const char *kTelemetryPath = "/devices/device1/telemetry";
 const char *kStatusPath = "/devices/device1/status";
+const char *kAwayModePath = "/devices/device1/switches/away_mode";
 QueueHandle_t firebaseQueue = nullptr;
 TaskHandle_t firebaseTaskHandle = nullptr;
 unsigned long lastFirebaseStatusWriteMs = 0;
+volatile bool currentAwayMode = false;
 
 String buildTelemetryPayload(int gas, float distance, bool motion){
   StaticJsonDocument<192> doc;
@@ -239,8 +241,8 @@ bool pushTelemetryNow(const char *payload){
     return true;
   }
 
-  if (Firebase.RTDB.pushJSON(&fbdo, kTelemetryPath, &json)){
-    Serial.println("Firebase: telemetry pushed");
+  if (Firebase.RTDB.setJSON(&fbdo, kTelemetryPath, &json)){
+    Serial.println("Firebase: telemetry updated");
     lastFirebasePushError = "";
     updateConnectionStatus(lastFirebaseStatusWriteMs == 0);
     return true;
@@ -273,11 +275,23 @@ void processFirebaseItem(const FirebaseTelemetryItem &item) {
 
 void firebaseTask(void*){
   FirebaseTelemetryItem item = {};
+  unsigned long lastPoll = 0;
 
   for (;;) {
     if (!firebaseQueue) {
       vTaskDelay(FIREBASE_IDLE_DELAY);
       continue;
+    }
+
+    if (firebaseIsReady()) {
+      unsigned long now = millis();
+      if (now - lastPoll >= 1000) {
+        lastPoll = now;
+        bool mode = false;
+        if (Firebase.RTDB.getBool(&fbdo, kAwayModePath, &mode)) {
+          currentAwayMode = mode;
+        }
+      }
     }
 
     if (xQueueReceive(firebaseQueue, &item, FIREBASE_IDLE_DELAY) == pdPASS) {
@@ -381,9 +395,13 @@ bool firebasePushTelemetry(int gas, float distance, bool motion, bool queueOnFai
 bool firebaseIsReady(){
   return firebaseEnabled && WiFi.status() == WL_CONNECTED && Firebase.ready();
 }
+bool firebaseGetAwayMode(){
+  return currentAwayMode;
+}
 #else
 void firebaseInit(){ }
 bool firebasePushTelemetry(int gas, float distance, bool motion, bool queueOnFailure){ return false; }
 bool firebasePushTelemetryPayload(const String &payload, bool queueOnFailure){ return false; }
 bool firebaseIsReady(){ return false; }
+bool firebaseGetAwayMode(){ return false; }
 #endif

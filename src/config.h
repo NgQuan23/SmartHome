@@ -38,31 +38,25 @@
 #define FIREBASE_DATABASE_SECRET ""
 
 
-#define BLYNK_TEMPLATE_ID "TMPL66UiZuFxu"
-#define BLYNK_TEMPLATE_NAME "smart home"
-#define BLYNK_AUTH_TOKEN "sc269hJiU_myc4vr0j_ckW3cGh0_fqox"
-
-
 #define TG_BOT_TOKEN "8527377630:AAFaNC761ehG82QhE34nb4voTxO7GM--zSk"
 #define TG_CHAT_ID "6578744940"
 
 
 #define ENABLE_FIREBASE 1
-#define ENABLE_BLYNK 1
 #define ENABLE_TELEGRAM 1
 
 // ESP32-S3 Super Mini wiring map for the SmartHome board.
 // Avoid GPIO0/GPIO3/GPIO19/GPIO20/GPIO45/GPIO46 and flash-connected GPIO9-14.
-#define PIN_MQ2 4
-#define PIN_PIR 5
-#define PIN_TRIG 6
-#define PIN_ECHO 7
+#define PIN_MQ2 1
+#define PIN_PIR 4
+#define PIN_TRIG 2
+#define PIN_ECHO 3
 #define PIN_I2C_SDA 8
-#define PIN_BUZZER 15
+#define PIN_BUZZER 5
 #define PIN_RELAY 16
 #define PIN_FAN_RELAY PIN_RELAY
 #define PIN_VALVE_RELAY 17
-#define PIN_I2C_SCL 18
+#define PIN_I2C_SCL 9
 
 
 #define GAS_LEVEL_1 800   

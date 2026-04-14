@@ -7,7 +7,6 @@
 #include <ArduinoJson.h>
 #include <ArduinoOTA.h>
 #include "firebase_client.h"
-#include "blynk_client.h"
 #include "telegram.h"
 #include "storage.h"
 #include "esp_sleep.h"
@@ -17,8 +16,8 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 const int GAS_THRESHOLD = 1500; 
 const int MQ2_SAMPLES = 8;      
-const unsigned long PIR_COOLDOWN_MS = 3000; 
-const unsigned long SENSOR_POLL_MS = 500;   
+const unsigned long PIR_COOLDOWN_MS = 3000;
+const unsigned long SENSOR_POLL_MS = 1000;   
 const unsigned long STORAGE_FLUSH_MS = 30000;
 
 
@@ -39,12 +38,10 @@ void setup() {
   Serial.flush();
 
 #ifdef ESP32
-  analogReadResolution(12);
-  analogSetPinAttenuation(PIN_MQ2, ADC_11db);
+  // analogReadResolution(12);
 #endif
 
   Serial.println("Setting up pins...");
-  pinMode(PIN_MQ2, INPUT);
   pinMode(PIN_PIR, INPUT);
   pinMode(PIN_TRIG, OUTPUT);
   pinMode(PIN_ECHO, INPUT);
@@ -73,7 +70,6 @@ void setup() {
   wifiInit();
   mqttInit();
 
-  blynkInit();
   firebaseInit();
   storageInit();
   storageFlush();  // Flush stored events after Firebase is ready
@@ -114,6 +110,7 @@ void readSensors(){
   int gasValue = readMQ2Avg();
   float distance = getDistance();
   bool motion = digitalRead(PIN_PIR);
+  bool awayMode = firebaseGetAwayMode();
 
   
   int distanceLevel = 0;
@@ -157,13 +154,14 @@ void readSensors(){
   if (!mqttOk) {
     storageAppend(telemetryPayload);
   }
-  blynkPublishTelemetry(gasValue, distance, motion, distanceLevel);
 
 
   unsigned long nowAlert = millis();
-  if (gasValue >= GAS_LEVEL_3) {
+  String msgQueue[3];
+  int msgCount = 0;
 
-    lcd.setCursor(0,1); lcd.print("FIRE! LOCK VAL");
+  if (gasValue >= GAS_LEVEL_3) {
+    msgQueue[msgCount++] = "FIRE! LOCK VAL";
     digitalWrite(PIN_VALVE_RELAY, HIGH); 
     digitalWrite(PIN_FAN_RELAY, LOW); 
     digitalWrite(PIN_BUZZER, HIGH);
@@ -171,30 +169,25 @@ void readSensors(){
       lastAlertTime = nowAlert;
       String msg = String("EMERGENCY: FIRE detected! Gas=") + gasValue;
       telegramSend(msg);
-      blynkNotify(msg.c_str());
     }
   }
   else if (gasValue >= GAS_LEVEL_2) {
-  
-    lcd.setCursor(0,1); lcd.print("LEAK: FAN ON     ");
+    msgQueue[msgCount++] = "LEAK: FAN ON";
     digitalWrite(PIN_FAN_RELAY, HIGH);
     digitalWrite(PIN_BUZZER, LOW);
     if ((nowAlert - lastAlertTime) >= ALERT_COOLDOWN_MS) {
       lastAlertTime = nowAlert;
       String msg = String("Warning: Gas leak detected. Value=") + gasValue;
       telegramSend(msg);
-      blynkNotify(msg.c_str());
     }
   }
   else if (gasValue >= GAS_LEVEL_1) {
-  
-    lcd.setCursor(0,1); lcd.print("Leak: Low       ");
+    msgQueue[msgCount++] = "Leak: Low";
     digitalWrite(PIN_FAN_RELAY, LOW);
     digitalWrite(PIN_BUZZER, LOW);
   }
   else {
-  
-    lcd.setCursor(0,1); lcd.print("Status: Safe   ");
+    // Không có lỗi Gas
     digitalWrite(PIN_FAN_RELAY, LOW);
     digitalWrite(PIN_VALVE_RELAY, LOW);
     digitalWrite(PIN_BUZZER, LOW);
@@ -203,7 +196,7 @@ void readSensors(){
 
 
   if (distance > 0 && distance <= DIST_LEVEL_3) {
-    lcd.setCursor(0,1); lcd.print("CRITICAL: OBSTACLE");
+    msgQueue[msgCount++] = "FLOOD: CRITICAL!";
     for (int i = 0; i < 5; ++i) {
       digitalWrite(PIN_BUZZER, HIGH);
       delay(150);
@@ -214,13 +207,12 @@ void readSensors(){
     digitalWrite(PIN_RELAY, HIGH);
     if ((nowAlert - lastAlertTime) >= ALERT_COOLDOWN_MS) {
       lastAlertTime = nowAlert;
-      String msg = String("CRITICAL: object too close (") + (int)distance + "cm). Cutting power.";
+      String msg = String("EMERGENCY: Flood! Water level critical (") + (int)distance + "cm). Cutting power.";
       telegramSend(msg);
-      blynkNotify(msg.c_str()); 
     }
   }
   else if (distance > 0 && distance <= DIST_LEVEL_2) {
-    lcd.setCursor(0,1); lcd.print("WARNING: NEAR    ");
+    msgQueue[msgCount++] = "WATER LEVEL HIGH";
     for (int i = 0; i < 3; ++i) {
       digitalWrite(PIN_BUZZER, HIGH);
       delay(120);
@@ -229,13 +221,12 @@ void readSensors(){
     }
     if ((nowAlert - lastAlertTime) >= ALERT_COOLDOWN_MS) {
       lastAlertTime = nowAlert;
-      String msg = String("Warning: object near (") + (int)distance + "cm)";
+      String msg = String("Warning: Water level is high (") + (int)distance + "cm)";
       telegramSend(msg);
-      blynkNotify(msg.c_str());
     }
   }
   else if (distanceLevel == 1) {
-    lcd.setCursor(0,1); lcd.print("HUMAN DETECTED ");
+    msgQueue[msgCount++] = "WATER RISING";
   }
 
 
@@ -254,24 +245,40 @@ void readSensors(){
   }
 
   
-  lcd.setCursor(0, 1);
-  if (gasValue > GAS_THRESHOLD) {
-    lcd.print("ALERT: GAS!    ");
-    digitalWrite(PIN_BUZZER, HIGH);
-    digitalWrite(PIN_RELAY, HIGH);
-  }
-  else if (motion) {
-    lcd.print("PIR: ALERT!    ");
-
+  if (motion && awayMode) {
+    msgQueue[msgCount++] = "INTRUDER ALERT!";
     digitalWrite(PIN_BUZZER, HIGH);
     delay(150);
     digitalWrite(PIN_BUZZER, LOW);
     digitalWrite(PIN_RELAY, LOW);
   }
+  else if (gasValue > GAS_THRESHOLD) {
+    digitalWrite(PIN_BUZZER, HIGH);
+    digitalWrite(PIN_RELAY, HIGH);
+  }
   else {
-    lcd.print("Status: Safe   ");
     digitalWrite(PIN_BUZZER, LOW);
     digitalWrite(PIN_RELAY, LOW);
+  }
+
+  // Khối xử lý hiển thị xoay vòng màn hình LCD
+  lcd.setCursor(0, 1);
+  if (msgCount == 0) {
+    lcd.print("Status: Safe    ");
+  } else {
+    static int currentMsgIdx = 0;
+    if (currentMsgIdx >= msgCount) currentMsgIdx = 0;
+    
+    String dispMsg = msgQueue[currentMsgIdx];
+    lcd.print(dispMsg);
+    
+    // Độn đuôi khoảng trắng (Pad) để xóa các kí tự thừa 
+    int len = dispMsg.length();
+    for (int i = 0; i < 16 - len; i++) {
+       lcd.print(" ");
+    }
+    
+    currentMsgIdx++;
   }
 }
 
@@ -279,7 +286,7 @@ void readSensors(){
 int readMQ2Avg(){
   long sum = 0;
   for (int i = 0; i < MQ2_SAMPLES; ++i) {
-    sum += analogRead(PIN_MQ2);
+    sum += (4095 - analogRead(PIN_MQ2)); // Đảo ngược logic giá trị cảm biến
     delay(5);
   }
   return (int)(sum / MQ2_SAMPLES);
