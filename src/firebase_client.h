@@ -6,3 +6,5 @@ bool firebasePushTelemetry(int gas, float distance, bool motion, bool queueOnFai
 bool firebasePushTelemetryPayload(const String &payload, bool queueOnFailure = true);
 bool firebaseIsReady();
 bool firebaseGetAwayMode();
+int firebaseGetDistanceCritical();
+int firebaseGetGasWarning();

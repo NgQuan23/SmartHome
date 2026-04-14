@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../theme.dart';
 import '../viewmodels/alert_viewmodel.dart';
 import '../models/alert_model.dart';
 
@@ -41,7 +42,7 @@ class _AlertsScreenState extends State<AlertsScreen> with AutomaticKeepAliveClie
           return ListView.separated(
             padding: const EdgeInsets.all(16.0),
             itemCount: viewModel.alerts.length,
-            separatorBuilder: (context, index) => const Divider(),
+            separatorBuilder: (context, index) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final alert = viewModel.alerts[index];
               return _AlertItem(alert: alert);
@@ -62,19 +63,31 @@ class _AlertItem extends StatelessWidget {
     final isCritical = alert.severity == "CRITICAL";
     final timeStr = DateFormat('yyyy-MM-dd HH:mm:ss').format(alert.timestamp);
 
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: isCritical ? Colors.red.withAlpha(50) : Colors.orange.withAlpha(50),
-        child: Icon(
-          alert.type == "GAS" ? Icons.warning : Icons.directions_run,
-          color: isCritical ? Colors.red : Colors.orange,
+    final color = isCritical ? AppTheme.error : Colors.orange;
+
+    return Container(
+      decoration: AppTheme.glassCardDecoration,
+      margin: const EdgeInsets.only(bottom: 4),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: CircleAvatar(
+          backgroundColor: color.withOpacity(0.15),
+          child: Icon(
+            alert.type == "GAS" ? Icons.warning : Icons.directions_run,
+            color: color,
+          ),
         ),
-      ),
-      title: Text(alert.message, style: const TextStyle(fontWeight: FontWeight.bold)),
-      subtitle: Text(timeStr),
-      trailing: Chip(
-        label: Text(alert.severity, style: const TextStyle(color: Colors.white, fontSize: 10)),
-        backgroundColor: isCritical ? Colors.red : Colors.orange,
+        title: Text(alert.message, style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textHighEmphasis)),
+        subtitle: Text(timeStr, style: const TextStyle(color: AppTheme.textMediumEmphasis)),
+        trailing: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.2), 
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color, width: 1),
+          ),
+          child: Text(alert.severity, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+        ),
       ),
     );
   }

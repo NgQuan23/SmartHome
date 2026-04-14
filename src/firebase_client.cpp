@@ -27,6 +27,7 @@ struct FirebaseTelemetryItem {
 FirebaseAuth auth;
 FirebaseConfig configF;
 FirebaseData fbdo;
+FirebaseData fbdoCmd;
 bool firebaseEnabled = false;
 bool firebaseUrlDerived = false;
 bool firebaseDisabledLogged = false;
@@ -38,10 +39,14 @@ String lastFirebasePushError;
 const char *kTelemetryPath = "/devices/device1/telemetry";
 const char *kStatusPath = "/devices/device1/status";
 const char *kAwayModePath = "/devices/device1/switches/away_mode";
+const char *kDistanceCriticalPath = "/devices/device1/settings/distance_critical";
+const char *kGasWarningPath = "/devices/device1/settings/gas_warning";
 QueueHandle_t firebaseQueue = nullptr;
 TaskHandle_t firebaseTaskHandle = nullptr;
 unsigned long lastFirebaseStatusWriteMs = 0;
 volatile bool currentAwayMode = false;
+volatile int currentDistanceCritical = 0;
+volatile int currentGasWarning = 0;
 
 String buildTelemetryPayload(int gas, float distance, bool motion){
   StaticJsonDocument<192> doc;
@@ -285,11 +290,30 @@ void firebaseTask(void*){
 
     if (firebaseIsReady()) {
       unsigned long now = millis();
-      if (now - lastPoll >= 1000) {
+      if (now - lastPoll >= 2000) {
         lastPoll = now;
         bool mode = false;
-        if (Firebase.RTDB.getBool(&fbdo, kAwayModePath, &mode)) {
-          currentAwayMode = mode;
+        if (Firebase.RTDB.getBool(&fbdoCmd, kAwayModePath, &mode)) {
+          if (currentAwayMode != mode) {
+             currentAwayMode = mode;
+             Serial.printf("Firebase: AwayMode updated to %s\n", mode ? "ON" : "OFF");
+          }
+        }
+        
+        int distCriticalVal = 0;
+        if (Firebase.RTDB.getInt(&fbdoCmd, kDistanceCriticalPath, &distCriticalVal)) {
+          if (currentDistanceCritical != distCriticalVal) {
+             currentDistanceCritical = distCriticalVal;
+             Serial.printf("Firebase: DistanceCritical updated to %d\n", distCriticalVal);
+          }
+        }
+        
+        int gasWarningVal = 0;
+        if (Firebase.RTDB.getInt(&fbdoCmd, kGasWarningPath, &gasWarningVal)) {
+          if (currentGasWarning != gasWarningVal) {
+             currentGasWarning = gasWarningVal;
+             Serial.printf("Firebase: GasWarning updated to %d\n", gasWarningVal);
+          }
         }
       }
     }
@@ -351,6 +375,9 @@ void firebaseInit(){
   Firebase.reconnectNetwork(true);
   fbdo.setBSSLBufferSize(4096, 1024);
   fbdo.setResponseSize(2048);
+  fbdoCmd.setBSSLBufferSize(2048, 1024);
+  fbdoCmd.setResponseSize(1024);
+
   Firebase.begin(&configF, &auth);
   Firebase.setDoubleDigits(5);
 
@@ -398,10 +425,18 @@ bool firebaseIsReady(){
 bool firebaseGetAwayMode(){
   return currentAwayMode;
 }
+int firebaseGetDistanceCritical(){
+  return currentDistanceCritical;
+}
+int firebaseGetGasWarning(){
+  return currentGasWarning;
+}
 #else
 void firebaseInit(){ }
 bool firebasePushTelemetry(int gas, float distance, bool motion, bool queueOnFailure){ return false; }
 bool firebasePushTelemetryPayload(const String &payload, bool queueOnFailure){ return false; }
 bool firebaseIsReady(){ return false; }
 bool firebaseGetAwayMode(){ return false; }
+int firebaseGetDistanceCritical(){ return 0; }
+int firebaseGetGasWarning(){ return 0; }
 #endif

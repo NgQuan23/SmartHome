@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
+import 'theme.dart';
 import 'viewmodels/dashboard_viewmodel.dart';
 import 'viewmodels/alert_viewmodel.dart';
 import 'views/dashboard_screen.dart';
@@ -56,7 +57,7 @@ class SmartHomeApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Smart Home Security',
-      theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.blueAccent),
+      theme: AppTheme.darkTheme,
       home: const MainNavigator(),
     );
   }

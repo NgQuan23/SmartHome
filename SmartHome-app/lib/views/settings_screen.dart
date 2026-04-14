@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:provider/provider.dart';
+import '../theme.dart';
 import '../services/mqtt_service.dart';
+import '../services/firebase_service.dart';
+import '../viewmodels/dashboard_viewmodel.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -30,41 +34,92 @@ class _SettingsScreenState extends State<SettingsScreen> with AutomaticKeepAlive
         padding: const EdgeInsets.all(16.0),
         children: [
           const _SectionHeader(title: "Manual Controls"),
-          ListTile(
-            leading: const Icon(Icons.volume_up, color: Colors.blue),
-            title: const Text("Test Buzzer"),
-            subtitle: const Text("Test device alarm system"),
-            trailing: ElevatedButton(
-              onPressed: () => mqttService.publishCommand('{"buzzer": 1}'),
-              child: const Text("TEST"),
+          Container(
+            decoration: AppTheme.glassCardDecoration,
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.volume_up, color: AppTheme.primary),
+                  title: const Text("Test Buzzer", style: TextStyle(color: AppTheme.textHighEmphasis)),
+                  subtitle: const Text("Test device alarm system", style: TextStyle(color: AppTheme.textMediumEmphasis)),
+                  trailing: Container(
+                    decoration: AppTheme.sciFiButtonDecoration(AppTheme.primary),
+                    child: TextButton(
+                      style: TextButton.styleFrom(foregroundColor: AppTheme.primary),
+                      onPressed: () => mqttService.publishCommand('{"buzzer": 1}'),
+                      child: const Text("TEST", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                    ),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.lightbulb, color: AppTheme.primary),
+                  title: const Text("Relay Control", style: TextStyle(color: AppTheme.textHighEmphasis)),
+                  subtitle: const Text("Manual relay switch", style: TextStyle(color: AppTheme.textMediumEmphasis)),
+                  trailing: Switch(
+                    value: false, 
+                    activeColor: AppTheme.primary,
+                    inactiveThumbColor: AppTheme.textMediumEmphasis,
+                    inactiveTrackColor: AppTheme.surfaceHighest,
+                    onChanged: (v) {},
+                  ),
+                ),
+              ],
             ),
           ),
-          ListTile(
-            leading: const Icon(Icons.lightbulb, color: Colors.blue),
-            title: const Text("Relay Control"),
-            subtitle: const Text("Manual relay switch"),
-            trailing: Switch(value: false, onChanged: (v) {}),
-          ),
-          const Divider(),
+          const SizedBox(height: 16),
           const _SectionHeader(title: "Alert Thresholds"),
-          const _ThresholdSlider(title: "Gas Warning Level", value: 800, max: 4096),
-          const _ThresholdSlider(title: "Distance Critical (cm)", value: 5, max: 100),
-          const Divider(),
+          Container(
+            decoration: AppTheme.glassCardDecoration,
+            padding: const EdgeInsets.all(16),
+            child: Consumer<DashboardViewModel>(
+              builder: (context, vm, child) {
+                return Column(
+                  children: [
+                    _ThresholdSlider(
+                      title: "Gas Warning Level", 
+                      initialValue: vm.gasWarning.toDouble(), 
+                      max: 4096,
+                      onChangeEnd: (v) => FirebaseService().setGasWarning(v.toInt()),
+                    ),
+                    const SizedBox(height: 16),
+                    _ThresholdSlider(
+                      title: "Distance Critical (cm)", 
+                      initialValue: vm.distCritical.toDouble(), 
+                      min: 5.0,
+                      max: 100,
+                      onChangeEnd: (v) => FirebaseService().setDistanceCritical(v.toInt()),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
           const _SectionHeader(title: "Device Info"),
-          const ListTile(
-            title: Text("Firmware Version"),
-            trailing: Text("1.0.2-stable"),
+          Container(
+             decoration: AppTheme.glassCardDecoration,
+             child: Column(
+               children: const [
+                 ListTile(
+                   title: Text("Firmware Version", style: TextStyle(color: AppTheme.textHighEmphasis)),
+                   trailing: Text("1.0.2-stable", style: TextStyle(color: AppTheme.textMediumEmphasis)),
+                 ),
+                 ListTile(
+                   title: Text("MAC Address", style: TextStyle(color: AppTheme.textHighEmphasis)),
+                   trailing: Text("AA:BB:CC:DD:EE:FF", style: TextStyle(color: AppTheme.textMediumEmphasis)),
+                 ),
+               ],
+             )
           ),
-          const ListTile(
-            title: Text("MAC Address"),
-            trailing: Text("AA:BB:CC:DD:EE:FF"),
-          ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 32),
           Center(
-            child: OutlinedButton.icon(
-              icon: const Icon(Icons.logout, color: Colors.red),
-              label: const Text("Sign Out", style: TextStyle(color: Colors.red)),
-              onPressed: () {},
+            child: Container(
+              decoration: AppTheme.sciFiButtonDecoration(AppTheme.error),
+              child: TextButton.icon(
+                icon: const Icon(Icons.logout, color: AppTheme.error),
+                label: const Text("Sign Out", style: TextStyle(color: AppTheme.error, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                onPressed: () {},
+              ),
             ),
           )
         ],
@@ -80,23 +135,65 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.blueAccent)),
+      child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.primary)),
     );
   }
 }
 
-class _ThresholdSlider extends StatelessWidget {
+class _ThresholdSlider extends StatefulWidget {
   final String title;
-  final double value;
+  final double initialValue;
+  final double min;
   final double max;
-  const _ThresholdSlider({required this.title, required this.value, required this.max});
+  final ValueChanged<double> onChangeEnd;
+
+  const _ThresholdSlider({
+    required this.title,
+    required this.initialValue,
+    this.min = 0.0,
+    required this.max,
+    required this.onChangeEnd,
+  });
+
+  @override
+  State<_ThresholdSlider> createState() => _ThresholdSliderState();
+}
+
+class _ThresholdSliderState extends State<_ThresholdSlider> {
+  late double _currentValue;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentValue = widget.initialValue;
+  }
+
+  @override
+  void didUpdateWidget(_ThresholdSlider oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialValue != widget.initialValue) {
+      _currentValue = widget.initialValue;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    double displayValue = _currentValue.clamp(widget.min, widget.max);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("$title: ${value.toInt()}"),
-        Slider(value: value, max: max, onChanged: (v) {}),
+        Text("${widget.title}: ${displayValue.toInt()}", style: const TextStyle(color: AppTheme.textHighEmphasis)),
+        Slider(
+          value: displayValue, 
+          min: widget.min,
+          max: widget.max, 
+          activeColor: AppTheme.primary,
+          inactiveColor: AppTheme.surfaceHighest,
+          onChanged: (v) {
+            setState(() { _currentValue = v; });
+          },
+          onChangeEnd: widget.onChangeEnd,
+        ),
       ],
     );
   }

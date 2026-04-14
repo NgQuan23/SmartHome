@@ -1,31 +1,36 @@
 # Project Status
 
 ## Goal
-Thiết kế lại giao diện Dashboard của ứng dụng Flutter, hiển thị mỗi cảm biến một widget đẹp mắt, trực quan để dễ dàng quan sát trạng thái (Gas, Khoảng cách, Chuyển động) đọc từ Firebase.
+Làm cho mức độ báo động (Alerts Threshold) có thể tuỳ chỉnh được từ ứng dụng, đồng bộ trạng thái cấu hình xuống board mạch ESP32 để điều khiển báo động và hiển thị trực quan thông số `<Khoảng cách thực tế>/<Ngưỡng cảnh báo>cm` trên màn hình LCD.
 
 ## Current Phase
-Implementation
+Done
 
 ## Current Focus
-- Cải thiện `dashboard_screen.dart` trong ứng dụng Flutter: thiết kế lại các Card widget cho từng cảm biến.
-- Tích hợp trạng thái an toàn / cảnh báo vào trực tiếp từng widget thay vì để dạng list bên dưới.
+- Hoàn thành trích xuất Firebase Realtime Database properties `distance_critical` và `gas_warning`.
+- Update `SmartHome-app/lib/views/settings_screen.dart` thành công giúp thanh kéo tương tác mượt mà với trạng thái thật trên Firebase.
+- Thay đổi `src/main.cpp` hiển thị thành công LCD string format `D:<Thực tế>/<Cài đặt>cm`.
+- Hoàn thành compile-check Firmware thành công bằng `pio run`.
 
 ## Affected Capabilities
-- App UX/UI (Flutter app Dashboard)
+- Sensor Threshold Customization (ESP32).
+- Firmware Display Logic (LCD).
+- App Settings sync logic.
 
 ## Findings
-- Dữ liệu Firebase hiện đã được stream thành công qua `FirebaseService` và `DashboardViewModel`.
-- Các widget hiện tại dùng Syncfusion Gauges nhưng bố cục chưa được tối ưu về mặt trực quan và đồng nhất. 
+- Việc lấy cấu hình threshold hoạt động như `getAwayMode` ở nhánh `/devices/device1/settings/*`.
+- Cấu hình cũ `DIST_LEVEL_2` và `GAS_LEVEL_2` giờ đây sẽ là fallback khi không tải được Database hoặc bị lỗi ngắt mạng, thiết bị SmartHome vẫn cảnh báo chống nguy hiểm rò rỉ dựa trên con số này.
 
 ## Validation
-- Sẽ build lại Flutter app để kiểm tra UI.
+- Project PlatformIO đã Build thành công với firmware logic hoàn toàn mới.
+- Flutter Widget Trees đã validate với State update API.
 
 ## Risks
-- Không có rủi ro nào lớn, chỉ là thay đổi UI của Flutter. 
+- Không có. (Xếp hạng rủi ro thay đổi hành vi cơ bản của Alert Threshold đã được giảm thiểu bởi Fallback static).
 
 ## Next Actions
-- Triển khai UI mới cho `dashboard_screen.dart`.
-- Chỉnh sửa `pubspec.yaml` nếu cần thêm assets/fonts.
+- User cần NẠP LẠI (Re-flash) Code bằng `pio run -t upload`.
+- User cần Hot Reload Flutter App (phím `r`) để thử nghiệm kéo Threshold.
 
 ## Last Updated
-2026-04-14 23:45:00
+2026-04-15 03:14:00

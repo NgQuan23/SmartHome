@@ -9,17 +9,48 @@ class DashboardViewModel extends ChangeNotifier {
   AlertViewModel? _alertViewModel;
   Telemetry? _currentTelemetry;
   bool _isLoading = true;
+  bool _awayMode = false;
 
   Telemetry? get telemetry => _currentTelemetry;
   bool get isLoading => _isLoading;
+  bool get awayMode => _awayMode;
 
-  static const int gasWarning = 800;
+  int _gasWarning = 1400;
   static const int gasCritical = 3000;
-  static const double distWarning = 5.0;
-  static const double distCritical = 2.0;
+  double _distCritical = 5.0;
+
+  int get gasWarning => _gasWarning;
+  double get distCritical => _distCritical;
 
   DashboardViewModel() {
     _listenToTelemetry();
+    _listenToAwayMode();
+    _listenToSettings();
+  }
+
+  void _listenToSettings() {
+    _firebaseService.gasWarningStream.listen((value) {
+      _gasWarning = value;
+      notifyListeners();
+    });
+    _firebaseService.distanceCriticalStream.listen((value) {
+      _distCritical = value.toDouble();
+      notifyListeners();
+    });
+  }
+
+  void _listenToAwayMode() {
+    _firebaseService.awayModeStream.listen((mode) {
+      _awayMode = mode;
+      notifyListeners();
+    });
+  }
+
+  Future<void> toggleAwayMode(bool isEnabled) async {
+    // Optionally update optimistic state
+    _awayMode = isEnabled;
+    notifyListeners();
+    await _firebaseService.setAwayMode(isEnabled);
   }
 
   void setAlertViewModel(AlertViewModel vm) {
@@ -69,7 +100,7 @@ class DashboardViewModel extends ChangeNotifier {
       triggerAlert("PROXIMITY", "Intruder detected at close range!", "CRITICAL");
     }
 
-    if (data.motion) {
+    if (data.motion && _awayMode) {
       triggerAlert("MOTION", "Unusual motion detected", "WARNING");
     }
   }
@@ -83,8 +114,8 @@ class DashboardViewModel extends ChangeNotifier {
 
   String getDistanceStatus() {
     if (_currentTelemetry == null) return "Unknown";
-    if (_currentTelemetry!.distance < distCritical) return "INTRUDER!";
-    if (_currentTelemetry!.distance < distWarning) return "CLOSE";
+    // Threshold is dynamic now
+    if (_currentTelemetry!.distance < _distCritical) return "CLOSE";
     return "CLEAR";
   }
 }

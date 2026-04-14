@@ -35,4 +35,60 @@ class FirebaseService {
       print("Error sending command: $e");
     }
   }
+
+  Stream<bool> get awayModeStream {
+    final ref = FirebaseDatabase.instance.ref('devices/device1/switches/away_mode');
+    return ref.onValue.map((event) {
+      final value = event.snapshot.value;
+      if (value is bool) return value;
+      return false; // Mặc định là tắt nếu chưa có dữ liệu
+    });
+  }
+
+  Future<void> setAwayMode(bool isEnabled) async {
+    try {
+      final ref = FirebaseDatabase.instance.ref('devices/device1/switches/away_mode');
+      await ref.set(isEnabled);
+    } catch (e) {
+      print("Error setting away mode: $e");
+    }
+  }
+
+  Stream<int> get distanceCriticalStream {
+    final ref = FirebaseDatabase.instance.ref('devices/device1/settings/distance_critical');
+    return ref.onValue.map((event) {
+      final value = event.snapshot.value;
+      if (value is int) return value;
+      if (value is double) return value.toInt();
+      return 5; // Default DIST_LEVEL_2
+    });
+  }
+
+  Future<void> setDistanceCritical(int limit) async {
+    try {
+      final ref = FirebaseDatabase.instance.ref('devices/device1/settings/distance_critical');
+      await ref.set(limit);
+    } catch (e) {
+      print("Error setting distance critical: $e");
+    }
+  }
+
+  Stream<int> get gasWarningStream {
+    final ref = FirebaseDatabase.instance.ref('devices/device1/settings/gas_warning');
+    return ref.onValue.map((event) {
+      final value = event.snapshot.value;
+      if (value is int) return value;
+      if (value is double) return value.toInt();
+      return 1400; // Default GAS_LEVEL_2
+    });
+  }
+
+  Future<void> setGasWarning(int limit) async {
+    try {
+      final ref = FirebaseDatabase.instance.ref('devices/device1/settings/gas_warning');
+      await ref.set(limit);
+    } catch (e) {
+      print("Error setting gas warning: $e");
+    }
+  }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_gauges/gauges.dart';
+import '../theme.dart';
 import '../viewmodels/dashboard_viewmodel.dart';
 import '../models/telemetry.dart';
 
@@ -19,13 +20,8 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
   Widget build(BuildContext context) {
     super.build(context);
     return Scaffold(
-      backgroundColor: Colors.grey[50], // Light background for contrast
       appBar: AppBar(
-        title: const Text('Smart Dashboard', style: TextStyle(fontWeight: FontWeight.bold)),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        scrolledUnderElevation: 0,
+        title: const Text('Smart Dashboard'),
       ),
       body: Consumer<DashboardViewModel>(
         builder: (context, viewModel, child) {
@@ -48,7 +44,7 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
                   padding: EdgeInsets.only(left: 4, bottom: 8),
                   child: Text(
                     "Overview",
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.textHighEmphasis),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -56,7 +52,7 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
                 const SizedBox(height: 16),
                 _buildDistanceWidget(telemetry, viewModel),
                 const SizedBox(height: 16),
-                _buildMotionWidget(telemetry),
+                _buildMotionWidget(telemetry, viewModel),
               ],
             ),
           );
@@ -88,7 +84,7 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
                     ),
                     const SizedBox(width: 12),
                     const Expanded(
-                      child: Text("Gas Level", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
+                      child: Text("Gas Level", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textHighEmphasis), overflow: TextOverflow.ellipsis),
                     ),
                   ],
                 ),
@@ -105,25 +101,28 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
                 RadialAxis(
                   minimum: 0, maximum: 4096,
                   showLabels: false, showTicks: false,
-                  axisLineStyle: const AxisLineStyle(thickness: 15, cornerStyle: CornerStyle.bothCurve),
+                  axisLineStyle: const AxisLineStyle(thickness: 15, dashArray: <double>[5, 3]),
                   ranges: <GaugeRange>[
-                    GaugeRange(startValue: 0, endValue: 800, color: Colors.green, startWidth: 15, endWidth: 15),
+                    GaugeRange(startValue: 0, endValue: 800, color: AppTheme.tertiary, startWidth: 15, endWidth: 15),
                     GaugeRange(startValue: 800, endValue: 3000, color: Colors.orange, startWidth: 15, endWidth: 15),
-                    GaugeRange(startValue: 3000, endValue: 4096, color: Colors.red, startWidth: 15, endWidth: 15),
+                    GaugeRange(startValue: 3000, endValue: 4096, color: AppTheme.error, startWidth: 15, endWidth: 15),
                   ],
                   pointers: <GaugePointer>[
                     NeedlePointer(
                       value: telemetry.gas.toDouble(),
-                      needleLength: 0.6,
-                      needleColor: Colors.blueGrey[800],
-                      knobStyle: const KnobStyle(color: Colors.white, borderColor: Colors.blueGrey, borderWidth: 0.05),
+                      needleLength: 0.7,
+                      needleStartWidth: 1,
+                      needleEndWidth: 4,
+                      needleColor: AppTheme.primary,
+                      knobStyle: const KnobStyle(color: AppTheme.primary, borderColor: AppTheme.primary, borderWidth: 0.05, knobRadius: 0.04),
+                      tailStyle: const TailStyle(length: 0.15, width: 4, color: AppTheme.primary),
                     )
                   ],
                   annotations: <GaugeAnnotation>[
                     GaugeAnnotation(
                       widget: Text(
                         "${telemetry.gas}",
-                        style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                        style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppTheme.textHighEmphasis),
                       ),
                       angle: 90,
                       positionFactor: 0.9,
@@ -161,7 +160,7 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
                     ),
                     const SizedBox(width: 12),
                     const Expanded(
-                      child: Text("Proximity", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
+                      child: Text("Proximity", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textHighEmphasis), overflow: TextOverflow.ellipsis),
                     ),
                   ],
                 ),
@@ -177,18 +176,19 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: Text("${telemetry.distance.toStringAsFixed(1)} cm", style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
+                    child: Text("${telemetry.distance.toStringAsFixed(1)} cm", style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppTheme.textHighEmphasis), overflow: TextOverflow.ellipsis),
                   ),
-                  const Icon(Icons.social_distance, color: Colors.blueGrey),
+                  const Icon(Icons.social_distance, color: AppTheme.textMediumEmphasis),
                 ],
               ),
               const SizedBox(height: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
+              Container(
+                decoration: AppTheme.sciFiButtonDecoration(color),
+                padding: const EdgeInsets.all(2),
                 child: LinearProgressIndicator(
                   value: (telemetry.distance / 100).clamp(0.0, 1.0),
                   minHeight: 12,
-                  backgroundColor: Colors.grey[200],
+                  backgroundColor: Colors.transparent,
                   valueColor: AlwaysStoppedAnimation<Color>(color),
                 ),
               ),
@@ -199,66 +199,111 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
     );
   }
 
-  Widget _buildMotionWidget(Telemetry telemetry) {
+  Widget _buildMotionWidget(Telemetry telemetry, DashboardViewModel vm) {
     bool isMotion = telemetry.motion;
-    Color color = isMotion ? Colors.red : Colors.green;
-    String status = isMotion ? "DETECTED" : "SECURE";
+    bool isAwayMode = vm.awayMode;
+    
+    Color color;
+    String status;
+    String description;
+    IconData icon;
+
+    if (!isAwayMode) {
+      color = AppTheme.textMediumEmphasis;
+      status = "DISABLED";
+      description = "Motion sensing off";
+      icon = Icons.blur_off;
+    } else {
+      color = isMotion ? AppTheme.error : AppTheme.tertiary;
+      status = isMotion ? "DETECTED" : "SECURE";
+      description = isMotion ? "Activity in area!" : "No movement";
+      icon = isMotion ? Icons.directions_run : Icons.verified_user;
+    }
 
     return Container(
       decoration: _cardDecoration(),
       padding: const EdgeInsets.all(20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
         children: [
-          Expanded(
-            child: Row(
-              children: [
-                 Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
-                    child: Icon(isMotion ? Icons.directions_run : Icons.verified_user, color: color, size: 28),
-                 ),
-                 const SizedBox(width: 12),
-                 Expanded(
-                   child: Column(
-                     crossAxisAlignment: CrossAxisAlignment.start,
-                     children: [
-                       const Text("Motion", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
-                       Text(isMotion ? "Activity in area!" : "No movement", style: TextStyle(color: Colors.grey[600], fontSize: 13), overflow: TextOverflow.ellipsis),
-                     ],
-                   ),
-                 ),
-              ],
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                     Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+                        child: Icon(icon, color: color, size: 28),
+                     ),
+                     const SizedBox(width: 12),
+                     Expanded(
+                       child: Column(
+                         crossAxisAlignment: CrossAxisAlignment.start,
+                         children: [
+                           const Text("Motion", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textHighEmphasis), overflow: TextOverflow.ellipsis),
+                           Text(description, style: TextStyle(color: AppTheme.textMediumEmphasis, fontSize: 13), overflow: TextOverflow.ellipsis),
+                         ],
+                       ),
+                     ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              _buildBadge(status, color),
+            ],
           ),
-          const SizedBox(width: 8),
-          _buildBadge(status, color),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8.0),
+            child: Divider(),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Icon(Icons.shield, color: isAwayMode ? AppTheme.primary : AppTheme.textMediumEmphasis, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        "Motion Alert (Away Mode)",
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textHighEmphasis),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: isAwayMode,
+                activeColor: AppTheme.primary,
+                inactiveThumbColor: AppTheme.textMediumEmphasis,
+                inactiveTrackColor: AppTheme.surfaceHighest,
+                onChanged: (value) => vm.toggleAwayMode(value),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
   BoxDecoration _cardDecoration() {
-    return BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
-      boxShadow: [
-        BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
-      ],
-    );
+    return AppTheme.glassCardDecoration;
   }
 
   Widget _buildBadge(String text, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(20)),
-      child: Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.5)),
+      decoration: BoxDecoration(color: color.withOpacity(0.2), borderRadius: BorderRadius.circular(20), border: Border.all(color: color, width: 1)),
+      child: Text(text, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.5)),
     );
   }
 
   Color _getStatusColor(String status) {
-    if (status == "SAFE" || status == "CLEAR" || status == "SECURE") return Colors.green;
+    if (status == "SAFE" || status == "CLEAR" || status == "SECURE") return AppTheme.tertiary;
     if (status == "WARNING" || status == "CLOSE") return Colors.orange;
-    return Colors.red;
+    return AppTheme.error;
   }
 }

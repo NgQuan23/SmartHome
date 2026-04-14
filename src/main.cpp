@@ -109,14 +109,20 @@ void loop() {
 void readSensors(){
   int gasValue = readMQ2Avg();
   float distance = getDistance();
-  bool motion = digitalRead(PIN_PIR);
   bool awayMode = firebaseGetAwayMode();
+  bool motion = awayMode ? digitalRead(PIN_PIR) : false;
 
   
+  int distCritical = firebaseGetDistanceCritical();
+  if (distCritical <= 0) distCritical = DIST_LEVEL_2;
+
+  int gasWarning = firebaseGetGasWarning();
+  if (gasWarning <= 0) gasWarning = GAS_LEVEL_2;
+
   int distanceLevel = 0;
   if (distance >= 0) {
     if (distance <= DIST_LEVEL_3) distanceLevel = 3;
-    else if (distance <= DIST_LEVEL_2) distanceLevel = 2;
+    else if (distance <= distCritical) distanceLevel = 2;
     else if (distance <= DIST_LEVEL_1) distanceLevel = 1;
   }
 
@@ -171,7 +177,7 @@ void readSensors(){
       telegramSend(msg);
     }
   }
-  else if (gasValue >= GAS_LEVEL_2) {
+  else if (gasValue >= gasWarning) {
     msgQueue[msgCount++] = "LEAK: FAN ON";
     digitalWrite(PIN_FAN_RELAY, HIGH);
     digitalWrite(PIN_BUZZER, LOW);
@@ -211,7 +217,7 @@ void readSensors(){
       telegramSend(msg);
     }
   }
-  else if (distance > 0 && distance <= DIST_LEVEL_2) {
+  else if (distance > 0 && distance <= distCritical) {
     msgQueue[msgCount++] = "WATER LEVEL HIGH";
     for (int i = 0; i < 3; ++i) {
       digitalWrite(PIN_BUZZER, HIGH);
@@ -225,23 +231,21 @@ void readSensors(){
       telegramSend(msg);
     }
   }
-  else if (distanceLevel == 1) {
-    msgQueue[msgCount++] = "WATER RISING";
-  }
-
+  // Removing WATER RISING msg to only alert when water level is critically high (<= distCritical)
 
   lcd.setCursor(0, 0);
   lcd.print("G:"); lcd.print(gasValue);
   lcd.print(" ");
   lcd.print("D:");
-  if (distance < 0) lcd.print("--cm   ");
+  if (distance < 0) lcd.print("--cm    ");
   else {
+    String distStr = String((int)distance) + "/" + String(distCritical) + "cm";
+    lcd.print(distStr);
 
-    lcd.print((int)distance);
-    lcd.print("cm");
-
-    int pad = 6 - String((int)distance).length();
-    for (int i = 0; i < pad; ++i) lcd.print(' ');
+    int pad = 8 - distStr.length();
+    if (pad > 0) {
+      for (int i = 0; i < pad; ++i) lcd.print(' ');
+    }
   }
 
   
