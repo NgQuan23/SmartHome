@@ -1,0 +1,50 @@
+name: smarthome
+description: "Smart Home Security Companion App"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  
+  # Firebase & Auth (Cập nhật phiên bản ổn định)
+  firebase_core: ^3.1.1
+  firebase_database: ^11.1.0
+  firebase_auth: ^5.4.1
+  firebase_messaging: ^15.2.10
+  
+  # State Management (MVVM)
+  provider: ^6.1.2
+  
+  # API & MQTT
+  http: ^1.2.1
+  mqtt_client: ^10.3.0
+  
+  # UI & Charts
+  syncfusion_flutter_gauges: ^25.1.37
+  fl_chart: ^0.70.2
+  intl: ^0.19.0
+  flutter_local_notifications: ^18.0.1
+  
+  # Persistence
+  sqflite: ^2.3.3+1
+  path: ^1.9.0
+  shared_preferences: ^2.2.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon/app_icon.png"
+
+flutter:
+  uses-material-design: true
