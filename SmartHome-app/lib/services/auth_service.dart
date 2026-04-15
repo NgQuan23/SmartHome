@@ -9,7 +9,7 @@ class AuthService {
     try {
       return await _auth.signInWithEmailAndPassword(email: email, password: password);
     } catch (e) {
-      print("Error signing in: $e");
+      debugPrint("Error signing in: $e");
       return null;
     }
   }

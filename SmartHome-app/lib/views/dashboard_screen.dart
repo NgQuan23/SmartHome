@@ -79,7 +79,7 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
                   children: [
                     Container(
                       padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+                      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
                       child: Icon(Icons.gas_meter, color: color, size: 28),
                     ),
                     const SizedBox(width: 12),
@@ -155,7 +155,7 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
                   children: [
                     Container(
                       padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+                      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
                       child: Icon(Icons.radar, color: color, size: 28),
                     ),
                     const SizedBox(width: 12),
@@ -233,7 +233,7 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
                   children: [
                      Container(
                         padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+                        decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
                         child: Icon(icon, color: color, size: 28),
                      ),
                      const SizedBox(width: 12),
@@ -277,7 +277,7 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
               ),
               Switch(
                 value: isAwayMode,
-                activeColor: AppTheme.primary,
+                activeThumbColor: AppTheme.primary,
                 inactiveThumbColor: AppTheme.textMediumEmphasis,
                 inactiveTrackColor: AppTheme.surfaceHighest,
                 onChanged: (value) => vm.toggleAwayMode(value),
@@ -296,7 +296,7 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
   Widget _buildBadge(String text, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(color: color.withOpacity(0.2), borderRadius: BorderRadius.circular(20), border: Border.all(color: color, width: 1)),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(20), border: Border.all(color: color, width: 1)),
       child: Text(text, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.5)),
     );
   }

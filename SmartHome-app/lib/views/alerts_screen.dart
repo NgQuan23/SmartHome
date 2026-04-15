@@ -71,7 +71,7 @@ class _AlertItem extends StatelessWidget {
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.15),
+          backgroundColor: color.withValues(alpha: 0.15),
           child: Icon(
             alert.type == "GAS" ? Icons.warning : Icons.directions_run,
             color: color,
@@ -82,7 +82,7 @@ class _AlertItem extends StatelessWidget {
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.2), 
+            color: color.withValues(alpha: 0.2), 
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: color, width: 1),
           ),

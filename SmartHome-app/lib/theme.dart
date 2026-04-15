@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class AppTheme {
@@ -32,7 +31,6 @@ class AppTheme {
         tertiary: tertiary,
         error: error,
         surface: surfaceLow,
-        background: background,
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
@@ -66,15 +64,15 @@ class AppTheme {
   // Glassmorphism helper
   static BoxDecoration get glassCardDecoration {
     return BoxDecoration(
-      color: surfaceHighest.withOpacity(0.4),
+      color: surfaceHighest.withValues(alpha: 0.4),
       borderRadius: BorderRadius.circular(20),
       border: Border.all(
-        color: primary.withOpacity(0.2),
+        color: primary.withValues(alpha: 0.2),
         width: 1,
       ),
       boxShadow: [
         BoxShadow(
-          color: primary.withOpacity(0.08),
+          color: primary.withValues(alpha: 0.08),
           blurRadius: 50,
           spreadRadius: -10,
         ),
@@ -89,7 +87,7 @@ class AppTheme {
       border: Border.all(color: color, width: 1.5),
       boxShadow: [
         BoxShadow(
-          color: color.withOpacity(0.5),
+          color: color.withValues(alpha: 0.5),
           blurRadius: 15,
           spreadRadius: -2,
         ),
@@ -128,7 +126,7 @@ class RectangularSliderThumbShape extends SliderComponentShape {
       ..style = PaintingStyle.fill;
       
     final Paint glowPaint = Paint()
-      ..color = (sliderTheme.thumbColor ?? Colors.cyan).withOpacity(0.5)
+      ..color = (sliderTheme.thumbColor ?? Colors.cyan).withValues(alpha: 0.5)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
 
     final rect = Rect.fromCenter(center: center, width: 8, height: 24);

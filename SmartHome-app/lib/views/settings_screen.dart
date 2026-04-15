@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:provider/provider.dart';
 import '../theme.dart';
 import '../services/mqtt_service.dart';
 import '../services/firebase_service.dart';
@@ -57,7 +56,7 @@ class _SettingsScreenState extends State<SettingsScreen> with AutomaticKeepAlive
                   subtitle: const Text("Manual relay switch", style: TextStyle(color: AppTheme.textMediumEmphasis)),
                   trailing: Switch(
                     value: false, 
-                    activeColor: AppTheme.primary,
+                    activeThumbColor: AppTheme.primary,
                     inactiveThumbColor: AppTheme.textMediumEmphasis,
                     inactiveTrackColor: AppTheme.surfaceHighest,
                     onChanged: (v) {},

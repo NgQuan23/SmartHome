@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:firebase_database/firebase_database.dart';
 import '../models/telemetry.dart';
 
@@ -32,7 +33,7 @@ class FirebaseService {
         "value": value
       });
     } catch (e) {
-      print("Error sending command: $e");
+      debugPrint("Error sending command: $e");
     }
   }
 
@@ -50,7 +51,7 @@ class FirebaseService {
       final ref = FirebaseDatabase.instance.ref('devices/device1/switches/away_mode');
       await ref.set(isEnabled);
     } catch (e) {
-      print("Error setting away mode: $e");
+      debugPrint("Error setting away mode: $e");
     }
   }
 
@@ -69,7 +70,7 @@ class FirebaseService {
       final ref = FirebaseDatabase.instance.ref('devices/device1/settings/distance_critical');
       await ref.set(limit);
     } catch (e) {
-      print("Error setting distance critical: $e");
+      debugPrint("Error setting distance critical: $e");
     }
   }
 
@@ -88,7 +89,7 @@ class FirebaseService {
       final ref = FirebaseDatabase.instance.ref('devices/device1/settings/gas_warning');
       await ref.set(limit);
     } catch (e) {
-      print("Error setting gas warning: $e");
+      debugPrint("Error setting gas warning: $e");
     }
   }
 }
