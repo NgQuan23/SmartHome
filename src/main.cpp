@@ -130,13 +130,37 @@ void loop() {
 
 void readSensors() {
   int gasValue = readMQ2Avg();
-  float distance = getDistance();
+  // 1. Smooth Distance Sensor Data
+  static float distBuffer[5] = {0, 0, 0, 0, 0};
+  static int distIdx = 0;
+  float rawDistance = getDistance();
+  
+  // Only update buffer if reading is potentially valid (HC-SR04 returns -1 or 0 on error)
+  if (rawDistance > 0 && rawDistance < 400) {
+    distBuffer[distIdx] = rawDistance;
+    distIdx = (distIdx + 1) % 5;
+  }
+
+  float distance = 0;
+  int validCount = 0;
+  for (int i = 0; i < 5; i++) {
+    if (distBuffer[i] > 0) {
+      distance += distBuffer[i];
+      validCount++;
+    }
+  }
+  if (validCount > 0) distance /= validCount;
+  else distance = -1; // No valid readings yet
+
   bool awayMode = firebaseGetAwayMode();
   bool motion = awayMode ? digitalRead(PIN_PIR) : false;
 
   int distCritical = firebaseGetDistanceCritical();
   if (distCritical <= 0)
     distCritical = DIST_LEVEL_2;
+
+  // Hysteresis: Clear alert only when water is significantly lower (e.g. +2cm)
+  int distCriticalClear = distCritical + 2;
 
   int gasWarning = firebaseGetGasWarning();
   if (gasWarning <= 0)
@@ -165,8 +189,9 @@ void readSensors() {
   if (motion || gasValue > GAS_LEVEL_1)
     lastActiveLocal = millis();
 
-  Serial.printf("Gas: %d | Distance: %s | Motion: %s\n", gasValue,
+  Serial.printf("Gas: %d | Distance: %s (Raw: %s) | Motion: %s\n", gasValue,
                 (distance < 0) ? "Out" : String(distance, 1).c_str(),
+                (rawDistance < 0) ? "Err" : String(rawDistance, 1).c_str(),
                 motion ? "DETECTED" : "NONE");
 
   StaticJsonDocument<192> doc;
@@ -189,7 +214,21 @@ void readSensors() {
   int msgCount = 0;
 
   static bool wasGasHigh = false;
+  static bool wasWaterHigh = false; // For Firebase notification tracking
+  static bool wasWaterHighLocal = false; // Internal state for hysteresis
+  
+  // Hysteresis Logic for waterHigh
+  if (distance > 0) {
+    if (distance <= distCritical) {
+      wasWaterHighLocal = true;
+    } else if (distance >= distCriticalClear) {
+      wasWaterHighLocal = false;
+    }
+    // If between thresholds (5cm - 7cm), maintain previous wasWaterHighLocal state
+  }
+  bool waterHigh = wasWaterHighLocal;
 
+  // Gas Logic (Fan, Valve, Buzzer)
   if (gasValue >= GAS_LEVEL_3) {
     if (!wasGasHigh) {
       wasGasHigh = true;
@@ -197,7 +236,7 @@ void readSensors() {
     }
     msgQueue[msgCount++] = "FIRE! LOCK VAL";
     digitalWrite(PIN_VALVE_RELAY, HIGH);
-    digitalWrite(PIN_FAN_RELAY, HIGH); // ON in fire to exhaust gas as requested
+    digitalWrite(PIN_FAN_RELAY, HIGH);
     digitalWrite(PIN_BUZZER, HIGH);
     if ((nowAlert - lastAlertTime) >= ALERT_COOLDOWN_MS) {
       lastAlertTime = nowAlert;
@@ -210,7 +249,7 @@ void readSensors() {
       firebasePushGasAlert(true, gasValue);
     }
     msgQueue[msgCount++] = "LEAK: FAN ON";
-    digitalWrite(PIN_FAN_RELAY, HIGH); // ON (Active-High)
+    digitalWrite(PIN_FAN_RELAY, HIGH);
     digitalWrite(PIN_BUZZER, LOW);
     if ((nowAlert - lastAlertTime) >= ALERT_COOLDOWN_MS) {
       lastAlertTime = nowAlert;
@@ -219,19 +258,18 @@ void readSensors() {
     }
   } else if (gasValue >= GAS_LEVEL_1) {
     msgQueue[msgCount++] = "Leak: Low";
-    digitalWrite(PIN_FAN_RELAY, HIGH); // ON (Active-High) for low leak
+    digitalWrite(PIN_FAN_RELAY, HIGH);
     digitalWrite(PIN_BUZZER, LOW);
   } else {
     if (wasGasHigh) {
       wasGasHigh = false;
       firebasePushGasAlert(false, gasValue);
     }
-    // Không có lỗi Gas
-    digitalWrite(PIN_FAN_RELAY, LOW); // OFF (Active-High)
+    digitalWrite(PIN_FAN_RELAY, LOW);
     digitalWrite(PIN_VALVE_RELAY, LOW);
-    digitalWrite(PIN_BUZZER, LOW);
   }
 
+  // Water Alert logic
   if (distance > 0 && distance <= DIST_LEVEL_3) {
     msgQueue[msgCount++] = "FLOOD: CRITICAL!";
     for (int i = 0; i < 5; ++i) {
@@ -240,15 +278,13 @@ void readSensors() {
       digitalWrite(PIN_BUZZER, LOW);
       delay(100);
     }
-
-    digitalWrite(PIN_RELAY, HIGH);
     if ((nowAlert - lastAlertTime) >= ALERT_COOLDOWN_MS) {
       lastAlertTime = nowAlert;
       String msg = String("EMERGENCY: Flood! Water level critical (") +
                    (int)distance + "cm). Cutting power.";
       telegramSend(msg);
     }
-  } else if (distance > 0 && distance <= distCritical) {
+  } else if (waterHigh) {
     msgQueue[msgCount++] = "WATER LEVEL HIGH";
     for (int i = 0; i < 3; ++i) {
       digitalWrite(PIN_BUZZER, HIGH);
@@ -263,21 +299,42 @@ void readSensors() {
       telegramSend(msg);
     }
   }
-  // Removing WATER RISING msg to only alert when water level is critically high
-  // (<= distCritical)
 
-  if (motion && awayMode) {
+  // Handle Water Alert notification to Mobile App (Firebase)
+  if (waterHigh) {
+    if (!wasWaterHigh) {
+      wasWaterHigh = true;
+      firebasePushWaterAlert(false, distance);
+    }
+  } else {
+    if (wasWaterHigh) {
+      wasWaterHigh = false;
+      firebasePushWaterAlert(true, distance);
+    }
+  }
+
+  // Consolidated Relay Logic (PIN_RELAY - Light Bulb)
+  // Priority 1: Water Safety (Cut power if high)
+  if (waterHigh) {
+    digitalWrite(PIN_RELAY, LOW); 
+  }
+  // Priority 2: Intruder Alert (Off if intruder detected and in Away Mode)
+  else if (motion && awayMode) {
     msgQueue[msgCount++] = "INTRUDER ALERT!";
     digitalWrite(PIN_BUZZER, HIGH);
     delay(150);
     digitalWrite(PIN_BUZZER, LOW);
     digitalWrite(PIN_RELAY, LOW);
-  } else if (gasValue > GAS_THRESHOLD) {
-    digitalWrite(PIN_BUZZER, HIGH);
-    digitalWrite(PIN_RELAY, HIGH);
-  } else {
+  }
+  // Priority 3: Gas Emergency (Buzzer ON, Relay ON by default in safe condition but here we can keep it ON)
+  else {
+    // Default safe condition: light bulb is ON
+    digitalWrite(PIN_RELAY, HIGH); 
+  }
+
+  // Ensure Buzzer is OFF if no emergency
+  if (gasValue < gasWarning && !waterHigh && !(motion && awayMode)) {
     digitalWrite(PIN_BUZZER, LOW);
-    digitalWrite(PIN_RELAY, LOW);
   }
 
   if (WiFi.status() != WL_CONNECTED) {

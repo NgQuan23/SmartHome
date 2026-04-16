@@ -1,16 +1,15 @@
 # Project Status
 
 ## Goal
-Làm cho mức độ báo động (Alerts Threshold) có thể tuỳ chỉnh được từ ứng dụng, đồng bộ trạng thái cấu hình xuống board mạch ESP32 để điều khiển báo động và hiển thị trực quan thông số `<Khoảng cách thực tế>/<Ngưỡng cảnh báo>cm` trên màn hình LCD.
+Thêm tính năng giám sát mực nước: khi nước ngập >= 5cm thì ngắt rơ le (tắt đèn), khi an toàn (> 5cm) thì bật rơ le (bật đèn) và gửi thông báo về ứng dụng mobile qua Firebase.
 
 ## Current Phase
-Done
+Troubleshooting
 
 ## Current Focus
-- Hoàn thành trích xuất Firebase Realtime Database properties `distance_critical` và `gas_warning`.
-- Update `SmartHome-app/lib/views/settings_screen.dart` thành công giúp thanh kéo tương tác mượt mà với trạng thái thật trên Firebase.
-- Thay đổi `src/main.cpp` hiển thị thành công LCD string format `D:<Thực tế>/<Cài đặt>cm`.
-- Hoàn thành compile-check Firmware thành công bằng `pio run`.
+- Xử lý lỗi rơ le bật tắt liên tục (Relay toggling).
+- Thiết kế bộ lọc làm mượt dữ liệu cảm biến (Sensor Smoothing) và trễ (Hysteresis).
+- Đảm bảo tính ổn định của hệ thống trước khi Re-flash.
 
 ## Affected Capabilities
 - Sensor Threshold Customization (ESP32).

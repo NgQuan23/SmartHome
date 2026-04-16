@@ -443,6 +443,15 @@ bool firebasePushGasAlert(bool isCritical, int gasValue) {
   json.set("timestamp", millis());
   return Firebase.RTDB.setJSONAsync(&fbdoAlert, "/devices/device1/alerts/gas", &json);
 }
+
+bool firebasePushWaterAlert(bool isSafe, float distance) {
+  if (!firebaseIsReady()) return false;
+  FirebaseJson json;
+  json.set("is_safe", isSafe);
+  json.set("distance", distance);
+  json.set("timestamp", millis());
+  return Firebase.RTDB.setJSONAsync(&fbdoAlert, "/devices/device1/alerts/water", &json);
+}
 #else
 void firebaseInit(){ }
 bool firebasePushTelemetry(int gas, float distance, bool motion, bool queueOnFailure){ return false; }
@@ -452,4 +461,5 @@ bool firebaseGetAwayMode(){ return false; }
 int firebaseGetDistanceCritical(){ return 0; }
 int firebaseGetGasWarning(){ return 0; }
 bool firebasePushGasAlert(bool isCritical, int gasValue){ return false; }
+bool firebasePushWaterAlert(bool isSafe, float distance){ return false; }
 #endif

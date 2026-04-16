@@ -9,3 +9,4 @@ bool firebaseGetAwayMode();
 int firebaseGetDistanceCritical();
 int firebaseGetGasWarning();
 bool firebasePushGasAlert(bool isCritical, int gasValue);
+bool firebasePushWaterAlert(bool isSafe, float distance);

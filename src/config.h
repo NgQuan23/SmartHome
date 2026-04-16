@@ -53,7 +53,7 @@
 #define PIN_ECHO 3
 #define PIN_I2C_SDA 8
 #define PIN_BUZZER 5
-#define PIN_RELAY 16
+#define PIN_RELAY 10
 #define PIN_FAN_RELAY 7
 #define PIN_VALVE_RELAY 17
 #define PIN_I2C_SCL 9
