@@ -49,7 +49,7 @@ void setup() {
 
   digitalWrite(PIN_RELAY, LOW);
   digitalWrite(PIN_BUZZER, LOW);
-  digitalWrite(PIN_FAN_RELAY, HIGH); // Default OFF for active-low fan
+  digitalWrite(PIN_FAN_RELAY, LOW); // Default OFF for active-high fan
 
   Serial.println("Initializing LCD...");
   Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
@@ -197,7 +197,7 @@ void readSensors() {
     }
     msgQueue[msgCount++] = "FIRE! LOCK VAL";
     digitalWrite(PIN_VALVE_RELAY, HIGH);
-    digitalWrite(PIN_FAN_RELAY, HIGH);
+    digitalWrite(PIN_FAN_RELAY, HIGH); // ON in fire to exhaust gas as requested
     digitalWrite(PIN_BUZZER, HIGH);
     if ((nowAlert - lastAlertTime) >= ALERT_COOLDOWN_MS) {
       lastAlertTime = nowAlert;
@@ -210,7 +210,7 @@ void readSensors() {
       firebasePushGasAlert(true, gasValue);
     }
     msgQueue[msgCount++] = "LEAK: FAN ON";
-    digitalWrite(PIN_FAN_RELAY, LOW); // ON (Active-Low)
+    digitalWrite(PIN_FAN_RELAY, HIGH); // ON (Active-High)
     digitalWrite(PIN_BUZZER, LOW);
     if ((nowAlert - lastAlertTime) >= ALERT_COOLDOWN_MS) {
       lastAlertTime = nowAlert;
@@ -219,7 +219,7 @@ void readSensors() {
     }
   } else if (gasValue >= GAS_LEVEL_1) {
     msgQueue[msgCount++] = "Leak: Low";
-    digitalWrite(PIN_FAN_RELAY, HIGH); // OFF (Active-Low)
+    digitalWrite(PIN_FAN_RELAY, HIGH); // ON (Active-High) for low leak
     digitalWrite(PIN_BUZZER, LOW);
   } else {
     if (wasGasHigh) {
@@ -227,7 +227,7 @@ void readSensors() {
       firebasePushGasAlert(false, gasValue);
     }
     // Không có lỗi Gas
-    digitalWrite(PIN_FAN_RELAY, HIGH); // OFF (Active-Low)
+    digitalWrite(PIN_FAN_RELAY, LOW); // OFF (Active-High)
     digitalWrite(PIN_VALVE_RELAY, LOW);
     digitalWrite(PIN_BUZZER, LOW);
   }
