@@ -8,3 +8,4 @@ bool firebaseIsReady();
 bool firebaseGetAwayMode();
 int firebaseGetDistanceCritical();
 int firebaseGetGasWarning();
+bool firebasePushGasAlert(bool isCritical, int gasValue);

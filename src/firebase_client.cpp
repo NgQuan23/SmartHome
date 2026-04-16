@@ -28,6 +28,7 @@ FirebaseAuth auth;
 FirebaseConfig configF;
 FirebaseData fbdo;
 FirebaseData fbdoCmd;
+FirebaseData fbdoAlert;
 bool firebaseEnabled = false;
 bool firebaseUrlDerived = false;
 bool firebaseDisabledLogged = false;
@@ -377,6 +378,8 @@ void firebaseInit(){
   fbdo.setResponseSize(2048);
   fbdoCmd.setBSSLBufferSize(2048, 1024);
   fbdoCmd.setResponseSize(1024);
+  fbdoAlert.setBSSLBufferSize(2048, 1024);
+  fbdoAlert.setResponseSize(1024);
 
   Firebase.begin(&configF, &auth);
   Firebase.setDoubleDigits(5);
@@ -431,6 +434,15 @@ int firebaseGetDistanceCritical(){
 int firebaseGetGasWarning(){
   return currentGasWarning;
 }
+
+bool firebasePushGasAlert(bool isCritical, int gasValue) {
+  if (!firebaseIsReady()) return false;
+  FirebaseJson json;
+  json.set("is_critical", isCritical);
+  json.set("value", gasValue);
+  json.set("timestamp", millis());
+  return Firebase.RTDB.setJSONAsync(&fbdoAlert, "/devices/device1/alerts/gas", &json);
+}
 #else
 void firebaseInit(){ }
 bool firebasePushTelemetry(int gas, float distance, bool motion, bool queueOnFailure){ return false; }
@@ -439,4 +451,5 @@ bool firebaseIsReady(){ return false; }
 bool firebaseGetAwayMode(){ return false; }
 int firebaseGetDistanceCritical(){ return 0; }
 int firebaseGetGasWarning(){ return 0; }
+bool firebasePushGasAlert(bool isCritical, int gasValue){ return false; }
 #endif
