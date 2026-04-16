@@ -154,6 +154,7 @@ void loop() {
       esp_deep_sleep_start();
     }
   }
+  updateBuzzer(); // Progress buzzer state (MUST be here for high frequency)
 }
 
 void readSensors() {
@@ -180,7 +181,7 @@ void readSensors() {
   if (validCount > 0) distance /= validCount;
   else distance = -1; // No valid readings yet
 
-  updateBuzzer(); // Progress buzzer state
+  // updateBuzzer() moved to loop()
 
   bool awayMode = firebaseGetAwayMode();
   bool motion = awayMode ? digitalRead(PIN_PIR) : false;
@@ -289,7 +290,7 @@ void readSensors() {
   } else if (gasValue >= GAS_LEVEL_1) {
     msgQueue[msgCount++] = "Leak: Low";
     digitalWrite(PIN_FAN_RELAY, HIGH);
-    setBuzzerPattern(0x00000000); // No buzzer for level 1 unless requested
+    setBuzzerPattern(0x00010001); // Very slow subtle beep for Level 1
   } else {
     if (wasGasHigh) {
       wasGasHigh = false;
@@ -338,11 +339,18 @@ void readSensors() {
   if (waterHigh) {
     digitalWrite(PIN_RELAY, LOW); 
   }
-  // Priority 2: Intruder Alert (Off if intruder detected and in Away Mode)
-  else if (motion && awayMode) {
-    msgQueue[msgCount++] = "INTRUDER ALERT!";
-    setBuzzerPattern(0x00000007); // Short burst
-    digitalWrite(PIN_RELAY, LOW);
+  // Priority 2: Intruder/Motion Alert
+  else if (motion) {
+    if (awayMode) {
+      msgQueue[msgCount++] = "INTRUDER ALERT!";
+      setBuzzerPattern(0x0000000F); // Short burst
+      digitalWrite(PIN_RELAY, LOW);
+    } else {
+      // General motion detection beep (only if not already noisy)
+      if (gasValue < gasWarning && !waterHigh) {
+        setBuzzerPattern(0x00000001); // Minimal blip for general motion
+      }
+    }
   }
   // Priority 3: Gas Emergency (Buzzer ON, Relay ON by default in safe condition but here we can keep it ON)
   else {
@@ -350,8 +358,8 @@ void readSensors() {
     digitalWrite(PIN_RELAY, HIGH); 
   }
 
-  // Ensure Buzzer is OFF if no emergency
-  if (gasValue < gasWarning && !waterHigh && !(motion && awayMode)) {
+  // Ensure Buzzer is OFF if no emergency and no motion
+  if (gasValue < GAS_LEVEL_1 && !waterHigh && !motion) {
     setBuzzerPattern(0x00000000);
   }
 
