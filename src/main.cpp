@@ -28,6 +28,34 @@ unsigned long lastPoll = 0;
 unsigned long lastAlertTime = 0;
 const unsigned long ALERT_COOLDOWN_MS = 60000;
 
+// Non-blocking buzzer state
+unsigned long buzzerTimer = 0;
+int buzzerState = 0; // 0: OFF, 1: ON
+uint32_t buzzerPattern = 0; // Bitmask for 100ms intervals
+int buzzerBitIdx = 0;
+unsigned long lastBuzzerTick = 0;
+
+void setBuzzerPattern(uint32_t pattern) {
+  if (buzzerPattern != pattern) {
+    buzzerPattern = pattern;
+    buzzerBitIdx = 0;
+  }
+}
+
+void updateBuzzer() {
+  if (buzzerPattern == 0) {
+    digitalWrite(PIN_BUZZER, !PIN_BUZZER_ACTIVE);
+    return;
+  }
+  unsigned long now = millis();
+  if (now - lastBuzzerTick >= 100) {
+    lastBuzzerTick = now;
+    bool bit = (buzzerPattern >> buzzerBitIdx) & 0x01;
+    digitalWrite(PIN_BUZZER, bit ? PIN_BUZZER_ACTIVE : !PIN_BUZZER_ACTIVE);
+    buzzerBitIdx = (buzzerBitIdx + 1) % 32;
+  }
+}
+
 void setup() {
   Serial.begin(115200);
   delay(5000); // 5 seconds wait for USB CDC attachment
@@ -152,6 +180,8 @@ void readSensors() {
   if (validCount > 0) distance /= validCount;
   else distance = -1; // No valid readings yet
 
+  updateBuzzer(); // Progress buzzer state
+
   bool awayMode = firebaseGetAwayMode();
   bool motion = awayMode ? digitalRead(PIN_PIR) : false;
 
@@ -237,7 +267,7 @@ void readSensors() {
     msgQueue[msgCount++] = "FIRE! LOCK VAL";
     digitalWrite(PIN_VALVE_RELAY, HIGH);
     digitalWrite(PIN_FAN_RELAY, HIGH);
-    digitalWrite(PIN_BUZZER, HIGH);
+    setBuzzerPattern(0x55555555); // Rapid beep
     if ((nowAlert - lastAlertTime) >= ALERT_COOLDOWN_MS) {
       lastAlertTime = nowAlert;
       String msg = String("EMERGENCY: FIRE detected! Gas=") + gasValue;
@@ -250,7 +280,7 @@ void readSensors() {
     }
     msgQueue[msgCount++] = "LEAK: FAN ON";
     digitalWrite(PIN_FAN_RELAY, HIGH);
-    digitalWrite(PIN_BUZZER, LOW);
+    setBuzzerPattern(0x0F0F0F0F); // Warning beep
     if ((nowAlert - lastAlertTime) >= ALERT_COOLDOWN_MS) {
       lastAlertTime = nowAlert;
       String msg = String("Warning: Gas leak detected. Value=") + gasValue;
@@ -259,7 +289,7 @@ void readSensors() {
   } else if (gasValue >= GAS_LEVEL_1) {
     msgQueue[msgCount++] = "Leak: Low";
     digitalWrite(PIN_FAN_RELAY, HIGH);
-    digitalWrite(PIN_BUZZER, LOW);
+    setBuzzerPattern(0x00000000); // No buzzer for level 1 unless requested
   } else {
     if (wasGasHigh) {
       wasGasHigh = false;
@@ -272,12 +302,7 @@ void readSensors() {
   // Water Alert logic
   if (distance > 0 && distance <= DIST_LEVEL_3) {
     msgQueue[msgCount++] = "FLOOD: CRITICAL!";
-    for (int i = 0; i < 5; ++i) {
-      digitalWrite(PIN_BUZZER, HIGH);
-      delay(150);
-      digitalWrite(PIN_BUZZER, LOW);
-      delay(100);
-    }
+    setBuzzerPattern(0x55555555); // Rapid beep
     if ((nowAlert - lastAlertTime) >= ALERT_COOLDOWN_MS) {
       lastAlertTime = nowAlert;
       String msg = String("EMERGENCY: Flood! Water level critical (") +
@@ -286,12 +311,7 @@ void readSensors() {
     }
   } else if (waterHigh) {
     msgQueue[msgCount++] = "WATER LEVEL HIGH";
-    for (int i = 0; i < 3; ++i) {
-      digitalWrite(PIN_BUZZER, HIGH);
-      delay(120);
-      digitalWrite(PIN_BUZZER, LOW);
-      delay(120);
-    }
+    setBuzzerPattern(0x0F0F0F0F); // Warning beep
     if ((nowAlert - lastAlertTime) >= ALERT_COOLDOWN_MS) {
       lastAlertTime = nowAlert;
       String msg =
@@ -321,9 +341,7 @@ void readSensors() {
   // Priority 2: Intruder Alert (Off if intruder detected and in Away Mode)
   else if (motion && awayMode) {
     msgQueue[msgCount++] = "INTRUDER ALERT!";
-    digitalWrite(PIN_BUZZER, HIGH);
-    delay(150);
-    digitalWrite(PIN_BUZZER, LOW);
+    setBuzzerPattern(0x00000007); // Short burst
     digitalWrite(PIN_RELAY, LOW);
   }
   // Priority 3: Gas Emergency (Buzzer ON, Relay ON by default in safe condition but here we can keep it ON)
@@ -334,7 +352,7 @@ void readSensors() {
 
   // Ensure Buzzer is OFF if no emergency
   if (gasValue < gasWarning && !waterHigh && !(motion && awayMode)) {
-    digitalWrite(PIN_BUZZER, LOW);
+    setBuzzerPattern(0x00000000);
   }
 
   if (WiFi.status() != WL_CONNECTED) {

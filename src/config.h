@@ -57,6 +57,7 @@
 #define PIN_FAN_RELAY 7
 #define PIN_VALVE_RELAY 17
 #define PIN_I2C_SCL 9
+#define PIN_BUZZER_ACTIVE 1 // 1 if buzzer is active-high, 0 if active-low
 
 
 #define GAS_LEVEL_1 800   
