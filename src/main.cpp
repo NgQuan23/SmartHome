@@ -344,7 +344,7 @@ void readSensors() {
     if (awayMode) {
       msgQueue[msgCount++] = "INTRUDER ALERT!";
       setBuzzerPattern(0x0000000F); // Short burst
-      digitalWrite(PIN_RELAY, LOW);
+      digitalWrite(PIN_RELAY, HIGH);
     } else {
       // General motion detection beep (only if not already noisy)
       if (gasValue < gasWarning && !waterHigh) {
